@@ -2,6 +2,7 @@ import { Component, OnInit, Input } from '@angular/core';
 import { Point } from './point';
 import { Checker } from './checker';
 import { BoardDimensions } from './board-dimensions';
+import { BoardUpdateService } from './board-update.service';
 
 @Component({
   selector: 'app-board',
@@ -22,7 +23,7 @@ export class BoardComponent implements OnInit {
   boardDimensions: BoardDimensions;
   checkersOnPoint: Map<number, Checker[]> = new Map<number, Checker[]>();
 
-  constructor() {
+  constructor( private boardUpdateService: BoardUpdateService) {
     this.leftOffset = 10;
     this.pointHeight = 200;
   }
@@ -41,6 +42,7 @@ export class BoardComponent implements OnInit {
     this.putCheckersOnPoint(3, 16, 1);
     this.putCheckersOnPoint(5, 18, 1);
     this.putCheckersOnPoint(2, 23, 2);
+    this.boardUpdateService.getUpdate(this.checkersOnPoint).subscribe((data) => console.log(data)); 
   }
 
   putCheckersOnPoint(nCheckers: number, pointId: number, player: number) {

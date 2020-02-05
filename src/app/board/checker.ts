@@ -14,6 +14,7 @@ export class Checker {
     nCheckersAlreadyOnPoint: number,
     boardDimensions: BoardDimensions
   ) {
+      this.player = player;
       this.x = BoardDimensions.computeCheckerX(pointId, boardDimensions);
       this.y = BoardDimensions.computeCheckerY(pointId, nCheckersAlreadyOnPoint, boardDimensions);
       this.r = BoardDimensions.computeCheckerRadius(boardDimensions);

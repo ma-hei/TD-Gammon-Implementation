@@ -248,7 +248,7 @@ func GetShuffledIndexes(n int) []int {
 
 func main() {
     nn := NeuralNetwork{} 
-    nn.Init([]int{28*28, 40, 10})
+    nn.Init([]int{28*28, 70, 10})
     trainImages := ReadImagesFromFile("train-images-idx3-ubyte")
     trainLabels := MakeTrainingLabels(ReadLabelsFromFile("train-labels-idx1-ubyte"))
     testImages := ReadImagesFromFile("t10k-images-idx3-ubyte")

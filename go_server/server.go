@@ -5,7 +5,7 @@ import (
 	
 	"github.com/labstack/echo"
         "github.com/labstack/echo/middleware"
-        "fmt"
+        //"fmt"
 )
 
 type User struct {
@@ -14,13 +14,16 @@ type User struct {
 }
 
 func main() {
+        //fmt.Printf("%v", len(b.points))
 	e := echo.New()
-	e.GET("/", func(c echo.Context) error {
+	e.GET("/GetBoardUpdate", func(c echo.Context) error {
               u := &User{
               Name:  "Jon",
               Email: "jon@labstack.com",
               }
-            fmt.Printf(c.Param("0"));
+            b := BackgammonState{}
+            b.InitFromString(c)
+            b.printState()
             return c.JSON(http.StatusOK, u)
 	})
 

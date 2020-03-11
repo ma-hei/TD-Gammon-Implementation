@@ -10,12 +10,11 @@ import { Checker } from './checker';
 
 export class BoardUpdateService {
 
-  private boardBackend = 'http://localhost:1323';
+  private boardBackend = 'http://localhost:1323/GetBoardUpdate';
 
   constructor(private http: HttpClient) { }
   
   getUpdate(checkersOnPoint: Map<number, Checker[]>) {
-    console.log("hi");
     let params = new HttpParams();
     for (let i=0;i < 24; i++) {
       let checkers = checkersOnPoint.get(i);

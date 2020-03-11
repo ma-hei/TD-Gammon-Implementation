@@ -246,28 +246,28 @@ func GetShuffledIndexes(n int) []int {
     return temp
 }
 
-func main() {
-    nn := NeuralNetwork{} 
-    nn.Init([]int{28*28, 70, 10})
-    trainImages := ReadImagesFromFile("train-images-idx3-ubyte")
-    trainLabels := MakeTrainingLabels(ReadLabelsFromFile("train-labels-idx1-ubyte"))
-    testImages := ReadImagesFromFile("t10k-images-idx3-ubyte")
-    testLabels := ReadLabelsFromFile("t10k-labels-idx1-ubyte")
-    nTrain := len(trainImages)
-
-    nEpochs := 100
-    learnRate := 1.2
-    for k := 0; k < nEpochs; k++ {
-        fmt.Printf("Epoch %v..", k)
-        idx := GetShuffledIndexes(nTrain)
-        for i := 0; i < nTrain; i++ {
-            nn.FeedForward(trainImages[idx[i]])
-            nn.Backpropagate(trainLabels[idx[i]])
-            nn.UpdateWeights(learnRate)
-        }
-        score := nn.Evaluate(testImages, testLabels)
-        fmt.Printf(" Score: %v\n", score)
-    }
-}
+//func main() {
+//    nn := NeuralNetwork{} 
+//    nn.Init([]int{28*28, 70, 10})
+//    trainImages := ReadImagesFromFile("train-images-idx3-ubyte")
+//    trainLabels := MakeTrainingLabels(ReadLabelsFromFile("train-labels-idx1-ubyte"))
+//    testImages := ReadImagesFromFile("t10k-images-idx3-ubyte")
+//    testLabels := ReadLabelsFromFile("t10k-labels-idx1-ubyte")
+//    nTrain := len(trainImages)
+//
+//   nEpochs := 100
+//    learnRate := 1.2
+//    for k := 0; k < nEpochs; k++ {
+//        fmt.Printf("Epoch %v..", k)
+//        idx := GetShuffledIndexes(nTrain)
+//        for i := 0; i < nTrain; i++ {
+//            nn.FeedForward(trainImages[idx[i]])
+//            nn.Backpropagate(trainLabels[idx[i]])
+//            nn.UpdateWeights(learnRate)
+//        }
+//        score := nn.Evaluate(testImages, testLabels)
+//        fmt.Printf(" Score: %v\n", score)
+//    }
+//}
 
 

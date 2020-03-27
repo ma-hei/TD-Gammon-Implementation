@@ -5,7 +5,7 @@ import (
 	
 	"github.com/labstack/echo"
         "github.com/labstack/echo/middleware"
-        //"fmt"
+        "fmt"
 )
 
 type User struct {
@@ -24,6 +24,9 @@ func main() {
             b := BackgammonState{}
             b.InitFromString(c)
             b.printState()
+            b.rollDice()
+            followUpStates := b.findAllPossibleFollowUpStates(4, 1)
+            fmt.Printf("n follow up states %v\n", len(followUpStates))
             return c.JSON(http.StatusOK, u)
 	})
 

@@ -55,5 +55,6 @@ export class BoardComponent implements OnInit {
   }
 
   mouseEnter(id: number) {
+    console.log(id);
   }
 }

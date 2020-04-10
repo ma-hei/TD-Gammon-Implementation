@@ -91,10 +91,24 @@ func (bgs *BackgammonState) findAllPossibleFollowUpStatesWithSingleDiceRoll(dice
     for i, _ := range bgs.points {
         if bgs.points[i][playerTurn] > 0 {
             var targetPoint int
-            if (playerTurn == 0) {
-                targetPoint = i + diceRoll
+            if playerTurn == 0 {
+                if i < 12 {
+                    targetPoint = i - diceRoll
+                } else {
+                    targetPoint = i + diceRoll
+                }
+                if targetPoint < 0 {
+                    targetPoint = 12 + (targetPoint * (-1)) - 1
+                }
             } else {
-                targetPoint = i - diceRoll
+                if i < 12 {
+                    targetPoint = i + diceRoll
+                } else {
+                    targetPoint = i - diceRoll
+                }
+                if i > 11 && targetPoint <= 11 {
+                    targetPoint = 11 - targetPoint
+                }
             }
             targetPointOnField := targetPoint >= 0 && targetPoint < 24
             targetPointOpen := targetPointOnField && bgs.points[targetPoint][otherPlayer] < 2

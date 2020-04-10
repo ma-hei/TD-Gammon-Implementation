@@ -84,47 +84,65 @@ func (bgs *BackgammonState) findFollowUpStatesWithDiceRolled(playerTurn int) map
     return allFollowUpStates
 }
 
-func (bgs *BackgammonState) findAllPossibleFollowUpStatesWithSingleDiceRoll(diceRoll int, playerTurn int) []BackgammonState {
-    possibleStates := make([]BackgammonState, 0, 100)
-    playerTurn--
+func getFollowUpPoint(start int, playerTurn int, diceRoll int) int {
+    var targetPoint int
+    if playerTurn == 0 {
+        if start < 12 {
+            targetPoint = start - diceRoll
+        } else {
+            targetPoint = start + diceRoll
+        }
+        if targetPoint < 0 {
+            targetPoint = 12 + (targetPoint * (-1)) - 1
+        }
+    } else {
+        if start < 12 {
+            targetPoint = start + diceRoll
+        } else {
+            targetPoint = start - diceRoll
+        }
+        if start > 11 && targetPoint <= 11 {
+            targetPoint = 11 - targetPoint
+        }
+    }
+    return targetPoint
+}
+
+func getFollowUpStateFromPointOrBar(startPoint int, playerTurn int, diceRoll int, currentState *BackgammonState) *BackgammonState {
     otherPlayer := (playerTurn+1) % 2
+    fmt.Printf("player Turn is %v, other player is %v\n", playerTurn, otherPlayer)
+    targetPoint := getFollowUpPoint(startPoint, playerTurn, diceRoll)
+    fmt.Printf("targetPoint is %v\n", targetPoint)
+    targetPointOnField := targetPoint >= 0 && targetPoint < 24
+    if targetPointOnField {
+        fmt.Printf("other player has %v on point\n", currentState.points[targetPoint][otherPlayer])
+    }
+    targetPointOpen := targetPointOnField && currentState.points[targetPoint][otherPlayer] < 2
+    targetIsHit := targetPointOnField && currentState.points[targetPoint][otherPlayer] == 1
+    if targetPointOpen {
+        fmt.Printf("found possible move from %v to %v\n", startPoint, targetPoint)
+        newBackGammonState := BackgammonState{}
+        newBackGammonState.InitFromOtherState(currentState)
+        newBackGammonState.points[startPoint][playerTurn] -= 1
+        newBackGammonState.points[targetPoint][playerTurn] += 1
+        if targetIsHit {
+            newBackGammonState.points[targetPoint][otherPlayer] -= 1
+            newBackGammonState.bar[otherPlayer] += 1
+        }
+        return &newBackGammonState
+    }
+    return nil
+}
+
+func (bgs *BackgammonState) findAllPossibleFollowUpStatesWithSingleDiceRoll(diceRoll int, playerTurn int) []BackgammonState {
+    playerTurn--
+    possibleStates := make([]BackgammonState, 0, 100)
     for i, _ := range bgs.points {
         if bgs.points[i][playerTurn] > 0 {
-            var targetPoint int
-            if playerTurn == 0 {
-                if i < 12 {
-                    targetPoint = i - diceRoll
-                } else {
-                    targetPoint = i + diceRoll
-                }
-                if targetPoint < 0 {
-                    targetPoint = 12 + (targetPoint * (-1)) - 1
-                }
-            } else {
-                if i < 12 {
-                    targetPoint = i + diceRoll
-                } else {
-                    targetPoint = i - diceRoll
-                }
-                if i > 11 && targetPoint <= 11 {
-                    targetPoint = 11 - targetPoint
-                }
+            newBackGammonState := getFollowUpStateFromPointOrBar(i, playerTurn, diceRoll, bgs)
+            if newBackGammonState != nil {
+                possibleStates = append(possibleStates, *newBackGammonState)
             }
-            targetPointOnField := targetPoint >= 0 && targetPoint < 24
-            targetPointOpen := targetPointOnField && bgs.points[targetPoint][otherPlayer] < 2
-            targetIsHit := targetPointOnField && bgs.points[targetPoint][otherPlayer] == 1
-            if targetPointOpen {
-                fmt.Printf("found possible move from %v to %v\n", i, targetPoint)
-                newBackGammonState := BackgammonState{}
-                newBackGammonState.InitFromOtherState(bgs)
-                newBackGammonState.points[i][playerTurn] -= 1
-                newBackGammonState.points[targetPoint][playerTurn] += 1
-                if targetIsHit {
-                    newBackGammonState.points[targetPoint][otherPlayer] -= 1
-                    newBackGammonState.bar[otherPlayer] += 1
-                }
-                possibleStates = append(possibleStates, newBackGammonState)
-            } 
         }
     } 
     return possibleStates 

@@ -24,7 +24,7 @@ func main() {
             b := BackgammonState{}
             b.InitFromString(c)
             b.printState()
-            followUpStates := b.rollDiceAndFindFollowUpStates(1)
+            followUpStates := b.rollDiceAndFindFollowUpStates(2)
             for _, v := range followUpStates {
                 fmt.Printf("--------------------\n")
                 v.rollDice()

@@ -22,6 +22,7 @@ export class BoardComponent implements OnInit {
   checkers: Checker[] = new Array();
   boardDimensions: BoardDimensions;
   checkersOnPoint: Map<number, Checker[]> = new Map<number, Checker[]>();
+  checkersOnBar: Checker[] = new Array();
 
   constructor( private boardUpdateService: BoardUpdateService) {
     this.leftOffset = 10;

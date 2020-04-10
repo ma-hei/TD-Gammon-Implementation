@@ -73,6 +73,25 @@ export class BoardDimensions {
     return this.leftOffset + 6*(this.pointWidth + this.pointSpacing) + 0.5*this.pointWidth;
   }
   
+  static computeCheckerOnBarX(boardDimensions: BoardDimensions) {
+    let x = boardDimensions.leftOffset + 6 * (boardDimensions.pointSpacing + boardDimensions.pointWidth) + 0.5 * boardDimensions.pointWidth;
+    return x;  
+  }
+
+  static computeCheckerOnBarY(upper: boolean, nCheckersOnPoint: number, boardDimensions: BoardDimensions) {
+    let radius = boardDimensions.pointHeight / 9;
+    let offset = (nCheckersOnPoint * (radius * 2) * 0.4 + radius) ;
+    let y;
+    if (upper) {
+      y = offset; 
+    } else
+    {
+      y = boardDimensions.boardHeight - offset;
+    }
+    return y;
+
+  }
+
   static computeCheckerX(pointId: number, boardDimensions: BoardDimensions) : number {
     let x = boardDimensions.leftOffset + (pointId % 12) * (boardDimensions.pointSpacing + boardDimensions.pointWidth) + 0.5 * boardDimensions.pointWidth;
     if ((pointId > 5 && pointId < 12 ) || pointId > 17) {

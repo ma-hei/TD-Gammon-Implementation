@@ -20,4 +20,9 @@ export class Checker {
       this.r = BoardDimensions.computeCheckerRadius(boardDimensions);
       this.color = BoardDimensions.getCheckerColor(player);
   }
+
+  moveCheckerToBar(numberCheckersAlreadyOnBar: number, boardDimensions: BoardDimensions) {
+      this.x = BoardDimensions.computeCheckerOnBarX(boardDimensions);
+      this.y = BoardDimensions.computeCheckerOnBarY(true, numberCheckersAlreadyOnBar, boardDimensions); 
+  }  
 }

@@ -24,9 +24,18 @@ func main() {
             b := BackgammonState{}
             b.InitFromString(c)
             b.printState()
-            b.rollDice()
-            followUpStates := b.findAllPossibleFollowUpStates(4, 1)
-            fmt.Printf("n follow up states %v\n", len(followUpStates))
+            followUpStates := b.rollDiceAndFindFollowUpStates(1)
+            for _, v := range followUpStates {
+                fmt.Printf("--------------------\n")
+                v.rollDice()
+                fmt.Printf("found another state\n")
+            }
+            //followUpStates := b.findAllPossibleFollowUpStates(4, 2)
+            //fmt.Printf("n follow up states %v\n", len(followUpStates))
+            //for _, s := range followUpStates {
+            //    fmt.Printf("------------------\n")
+            //    s.printState()
+            //}
             return c.JSON(http.StatusOK, u)
 	})
 

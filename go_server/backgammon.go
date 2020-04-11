@@ -13,6 +13,36 @@ type BackgammonState struct {
     dice1 int
     dice2 int
     bar []int
+    allCheckersOnHomeBoard []bool
+    checkersBearedOff []int
+}
+
+func (bgs *BackgammonState) FindNumBearedOffCheckerrs() {
+    var numCheckersOnFieldPlayer1 int = 0
+    var numCheckersOnFieldPlayer2 int = 0
+    for i := 0; i<24; i++ {
+        numCheckersOnFieldPlayer1 += bgs.points[i][0]
+        numCheckersOnFieldPlayer2 += bgs.points[i][1]
+    }
+    numCheckersOnFieldPlayer1 += bgs.bar[0]
+    numCheckersOnFieldPlayer2 += bgs.bar[1]
+    bgs.checkersBearedOff[0] = 15 - numCheckersOnFieldPlayer1
+    bgs.checkersBearedOff[1] = 15 - numCheckersOnFieldPlayer2
+}
+
+func (bgs *BackgammonState) FindIfAllCheckersOnHomeBoard() {
+    var player1AllCheckersHome bool = true
+    var player2AllCheckersHome bool = true
+    for i := 0; i<24; i++ {
+        if (i < 6 || i > 11) && bgs.points[i][1] > 0 {
+            player2AllCheckersHome = false
+        }
+        if i < 18 && bgs.points[i][0] > 0 {
+            player1AllCheckersHome = false
+        }
+    }
+    bgs.allCheckersOnHomeBoard[0] = player1AllCheckersHome && bgs.bar[0] == 0
+    bgs.allCheckersOnHomeBoard[1] = player2AllCheckersHome && bgs.bar[1] == 0
 }
 
 func (bgs *BackgammonState) InitFromString(c echo.Context) {
@@ -26,6 +56,7 @@ func (bgs *BackgammonState) InitFromString(c echo.Context) {
             bgs.points[i][player-1] = nCheckers
         }
     }
+    bgs.FindIfAllCheckersOnHomeBoard()
 }
 
 func (bgs *BackgammonState) InitFromOtherState(other *BackgammonState) {
@@ -104,19 +135,18 @@ func getFollowUpPoint(start int, playerTurn int, diceRoll int) int {
         if start > 11 && targetPoint <= 11 {
             targetPoint = 11 - targetPoint
         }
+        if start < 12 && targetPoint >= 12 {
+            targetPoint = 24 + (targetPoint - 12)
+        }
     }
+    
     return targetPoint
 }
 
-func getFollowUpStateFromPointOrBar(startPoint int, playerTurn int, diceRoll int, currentState *BackgammonState) *BackgammonState {
+func getFollowUpStateFromPoint2(startPoint int, playerTurn int, diceRoll int, currentState *BackgammonState) *BackgammonState {
     otherPlayer := (playerTurn+1) % 2
-    fmt.Printf("player Turn is %v, other player is %v\n", playerTurn, otherPlayer)
     targetPoint := getFollowUpPoint(startPoint, playerTurn, diceRoll)
-    fmt.Printf("targetPoint is %v\n", targetPoint)
     targetPointOnField := targetPoint >= 0 && targetPoint < 24
-    if targetPointOnField {
-        fmt.Printf("other player has %v on point\n", currentState.points[targetPoint][otherPlayer])
-    }
     targetPointOpen := targetPointOnField && currentState.points[targetPoint][otherPlayer] < 2
     targetIsHit := targetPointOnField && currentState.points[targetPoint][otherPlayer] == 1
     if targetPointOpen {
@@ -134,12 +164,47 @@ func getFollowUpStateFromPointOrBar(startPoint int, playerTurn int, diceRoll int
     return nil
 }
 
+func createNewBackGammonState(startPoint int, targetPoint int, playerTurn int, targetIsHit bool, currentState *BackgammonState) *BackgammonState {
+    otherPlayer := (playerTurn+1) % 2
+    newBackGammonState := BackgammonState{}
+    newBackGammonState.InitFromOtherState(currentState)
+    newBackGammonState.points[startPoint][playerTurn] -= 1
+    newBackGammonState.points[targetPoint][playerTurn] += 1
+    if targetIsHit {
+        newBackGammonState.points[targetPoint][otherPlayer] -= 1
+        newBackGammonState.bar[otherPlayer] += 1
+    }
+    return &newBackGammonState
+}
+
+func getFollowUpStateFromPoint(startPoint int, playerTurn int, diceRoll int, currentState *BackgammonState) *BackgammonState {
+    otherPlayer := (playerTurn+1) % 2
+    targetPoint := getFollowUpPoint(startPoint, playerTurn, diceRoll)
+    //playerCanBearOff := currentState.allCheckersOnHomeBoard[playerTurn]
+    targetPointOnField := targetPoint >= 0 && targetPoint < 24
+    targetPointOnFieldAndPointOpen := targetPointOnField && currentState.points[targetPoint][otherPlayer] < 2
+    targetCanBeHit := targetPointOnFieldAndPointOpen && currentState.points[targetPoint][otherPlayer] == 1
+    
+    if (targetPointOnFieldAndPointOpen) {
+        // create new state
+        fmt.Printf("found possible move from %v to %v\n", startPoint, targetPoint)
+        newBackGammonState := createNewBackGammonState(startPoint, targetPoint, playerTurn, targetCanBeHit, currentState)
+        return newBackGammonState
+    }
+    return nil
+    
+    //targetIsExactBearOff := (playerTurn == 0 && targetPoint == 24) || (playerTurn == 1 && targetPoint == 12)
+    //if (playerCanBearOff && targetIsExactBearOff) {
+    // crete new state
+    //} 
+}
+
 func (bgs *BackgammonState) findAllPossibleFollowUpStatesWithSingleDiceRoll(diceRoll int, playerTurn int) []BackgammonState {
     playerTurn--
     possibleStates := make([]BackgammonState, 0, 100)
     for i, _ := range bgs.points {
         if bgs.points[i][playerTurn] > 0 {
-            newBackGammonState := getFollowUpStateFromPointOrBar(i, playerTurn, diceRoll, bgs)
+            newBackGammonState := getFollowUpStateFromPoint(i, playerTurn, diceRoll, bgs)
             if newBackGammonState != nil {
                 possibleStates = append(possibleStates, *newBackGammonState)
             }
@@ -158,5 +223,7 @@ func (bgs *BackgammonState) Init() {
     bgs.bar = make([]int, 2)
     bgs.bar[0] = 0
     bgs.bar[1] = 0
+    bgs.allCheckersOnHomeBoard = make([]bool, 2)
+    bgs.checkersBearedOff = make([]int, 2)
 }
 

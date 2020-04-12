@@ -17,7 +17,7 @@ type BackgammonState struct {
     checkersBearedOff []int
 }
 
-func (bgs *BackgammonState) FindNumBearedOffCheckerrs() {
+func (bgs *BackgammonState) FindNumBearedOffCheckers() {
     var numCheckersOnFieldPlayer1 int = 0
     var numCheckersOnFieldPlayer2 int = 0
     for i := 0; i<24; i++ {
@@ -64,9 +64,11 @@ func (bgs *BackgammonState) InitFromOtherState(other *BackgammonState) {
     for i:=0; i<24; i++ {
         bgs.points[i][0] = other.points[i][0]
         bgs.points[i][1] = other.points[i][1]
-        bgs.bar[0] = other.bar[0]
-        bgs.bar[1] = other.bar[1]
     }
+    bgs.bar[0] = other.bar[0]
+    bgs.bar[1] = other.bar[1]
+    bgs.allCheckersOnHomeBoard[0] = other.allCheckersOnHomeBoard[0]
+    bgs.allCheckersOnHomeBoard[1] = other.allCheckersOnHomeBoard[1]
 }
 
 func (bgs *BackgammonState) printState() {
@@ -77,7 +79,7 @@ func (bgs *BackgammonState) printState() {
 }
 
 func (bgs *BackgammonState) rollDice() {
-    rand.Seed(42)
+    rand.Seed(85)
     bgs.dice1 = rand.Intn(6) + 1
     bgs.dice2 = rand.Intn(6) + 1
 }
@@ -101,21 +103,136 @@ func (bgs *BackgammonState) rollDiceAndFindFollowUpStates(playerTurn int) map[st
     return bgs.findFollowUpStatesWithDiceRolled(playerTurn)
 }
 
-func (bgs *BackgammonState) findFollowUpStatesWithDiceRolled(playerTurn int) map[string]BackgammonState {
+func (bgs *BackgammonState) findFollowUpStatesWithTwoSameDiceRolled(playerTurn int) map[string]BackgammonState {
     allFollowUpStates := make(map[string]BackgammonState)
-    fmt.Printf("---- first dice \n")
-    afterFirstRoll := bgs.findAllPossibleFollowUpStatesWithSingleDiceRoll(bgs.dice1, playerTurn)
-    fmt.Printf("----- second dice \n")
-    for _, s := range afterFirstRoll {
-        afterSecond := s.findAllPossibleFollowUpStatesWithSingleDiceRoll(bgs.dice2, playerTurn)
-        for _, s2 := range afterSecond {
-            allFollowUpStates[s2.toString()] = s2
-        }
+    diceRolled := bgs.dice1
+    start := []BackgammonState{*bgs}
+
+    for i := 0; i<4; i++ {
+        fmt.Printf("---- using dice %v for %v time\n", diceRolled, (i+1))
+        followUpStatesAfterDiceUsed := findAllPossibleFollowUpStatesFromStatesWithSingleDiceRoll(diceRolled, playerTurn, start)
+        if len(followUpStatesAfterDiceUsed) == 0 {
+            fmt.Printf("---- can't use dice %v times\n", (i+1))
+            break;
+        } 
+        followUpStatesAfterDiceUsed = removeDuplicateStates(followUpStatesAfterDiceUsed)
+        start = followUpStatesAfterDiceUsed
+        fmt.Printf("---- find %v states\n", len(start))
     }
+    
+    addFollowUpStatesToAllStates(start, allFollowUpStates)
     return allFollowUpStates
 }
 
+// Use at best both dice. If not use only a single one. If you can't use both dice, but each single one use the larger
+func (bgs *BackgammonState) findFollowUpStatesWithTwoDifferentDiceRolled(playerTurn int) map[string]BackgammonState {
+    allFollowUpStates := make(map[string]BackgammonState)
+    dice1 := bgs.dice1
+    dice2 := bgs.dice2
+    start := []BackgammonState{*bgs}
+    fmt.Printf("---- from current state, using first dice %v\n", dice1)
+    usingOnlyFirstDice := findAllPossibleFollowUpStatesFromStatesWithSingleDiceRoll(dice1, playerTurn, start)
+    fmt.Printf("---- found  %v states when using only first dice\n", len(usingOnlyFirstDice))
+    
+    fmt.Printf("---- after first dice used, using second dice %v\n", dice2)    
+    usingFirstDiceThenSecondDice := findAllPossibleFollowUpStatesFromStatesWithSingleDiceRoll(dice2, playerTurn, usingOnlyFirstDice)
+    fmt.Printf("---- found  %v states when using first then second dice\n", len(usingFirstDiceThenSecondDice))
+
+    fmt.Printf("---- from current state, using second dice %v\n", dice2)
+    usingOnlySecondDice := findAllPossibleFollowUpStatesFromStatesWithSingleDiceRoll(dice2, playerTurn, start)
+    fmt.Printf("---- found  %v states when using only second dice\n", len(usingOnlySecondDice))
+
+    fmt.Printf("---- after second dice used, using first dice %v\n", dice1)    
+    usingSecondDiceThenFirstDice := findAllPossibleFollowUpStatesFromStatesWithSingleDiceRoll(dice1, playerTurn, usingOnlySecondDice)
+    fmt.Printf("---- found  %v states when using second dice then first dice\n", len(usingSecondDiceThenFirstDice))
+
+    // If it was possible to use both dice, then return that as follow up states
+    if (len(usingFirstDiceThenSecondDice) > 0 || len(usingSecondDiceThenFirstDice) > 0) {
+        addFollowUpStatesToAllStates(usingFirstDiceThenSecondDice, allFollowUpStates)
+        addFollowUpStatesToAllStates(usingSecondDiceThenFirstDice, allFollowUpStates)
+        return allFollowUpStates
+    }
+
+    // It was not possible to use both dice. If both single dice could be used, use the larger one (that's the rules)
+    if len(usingOnlyFirstDice) > 0 && len(usingOnlySecondDice) > 0 {
+        if dice1 > dice2 {
+            addFollowUpStatesToAllStates(usingOnlyFirstDice, allFollowUpStates)
+            return allFollowUpStates
+        }
+        addFollowUpStatesToAllStates(usingOnlySecondDice, allFollowUpStates)
+        return allFollowUpStates
+    }
+    // Only one of the single dice could be used
+    addFollowUpStatesToAllStates(usingOnlyFirstDice, allFollowUpStates)
+    addFollowUpStatesToAllStates(usingOnlySecondDice, allFollowUpStates)
+    return allFollowUpStates
+}
+
+func (bgs *BackgammonState) findFollowUpStatesWithDiceRolled(playerTurn int) map[string]BackgammonState {
+    if bgs.dice1 == bgs.dice2 {
+        return bgs.findFollowUpStatesWithTwoSameDiceRolled(playerTurn)        
+    }
+    return bgs.findFollowUpStatesWithTwoDifferentDiceRolled(playerTurn)
+}
+
+func addFollowUpStatesToAllStates(followUpStates []BackgammonState, allStates map[string]BackgammonState) {
+    for _, s := range followUpStates {
+        allStates[s.toString()] = s
+    }
+}
+
+func removeDuplicateStates(states []BackgammonState) []BackgammonState {
+    statesMap := make(map[string]BackgammonState)
+    deduplicatedStates := make([]BackgammonState, 0, 100)
+    for _, s := range states {
+        _, alreadyPresent := statesMap[s.toString()]
+        if !alreadyPresent {
+            statesMap[s.toString()] = s
+            deduplicatedStates = append(deduplicatedStates, s)
+        }
+    } 
+    return deduplicatedStates
+}
+
+func findAllPossibleFollowUpStatesFromStatesWithSingleDiceRoll(diceRoll int, playerTurn int, startStates []BackgammonState) []BackgammonState{
+    playerTurn--
+    possibleFollowUpStates := make([]BackgammonState, 0, 100)
+    for _, s := range startStates {
+        // If a checker is on the bar move that first
+        if s.bar[playerTurn] > 0 {
+            newBackGammonState := getFollowUpStateFromPoint(-1, playerTurn, diceRoll, &s)
+            if newBackGammonState != nil {
+                possibleFollowUpStates = append(possibleFollowUpStates, *newBackGammonState)
+            }
+        } else {
+            for i, _ := range s.points {
+                if s.points[i][playerTurn] > 0 {
+                    newBackGammonState := getFollowUpStateFromPoint(i, playerTurn, diceRoll, &s)
+                    if newBackGammonState != nil {
+                        possibleFollowUpStates = append(possibleFollowUpStates, *newBackGammonState)
+                    }
+                }
+            } 
+        }
+    }
+    return possibleFollowUpStates 
+}
+
+func getFollowUpPointFromBar(playerTurn int, diceRoll int) int {
+    if playerTurn == 0 {
+        return 12 - diceRoll
+    } else {
+        return 24 - diceRoll
+    }
+}
+
+// gets the point to which we would put a checker for the player playerTurn
+// and dice roll diceRoll. If the point is >=24, this means the checker would
+// be beared off. 24 means its exactly beared off. 25 means its beared off +1, etc.
 func getFollowUpPoint(start int, playerTurn int, diceRoll int) int {
+    if start == -1 {
+        return getFollowUpPointFromBar(playerTurn, diceRoll)
+    }
     var targetPoint int
     if playerTurn == 0 {
         if start < 12 {
@@ -143,74 +260,63 @@ func getFollowUpPoint(start int, playerTurn int, diceRoll int) int {
     return targetPoint
 }
 
-func getFollowUpStateFromPoint2(startPoint int, playerTurn int, diceRoll int, currentState *BackgammonState) *BackgammonState {
-    otherPlayer := (playerTurn+1) % 2
-    targetPoint := getFollowUpPoint(startPoint, playerTurn, diceRoll)
-    targetPointOnField := targetPoint >= 0 && targetPoint < 24
-    targetPointOpen := targetPointOnField && currentState.points[targetPoint][otherPlayer] < 2
-    targetIsHit := targetPointOnField && currentState.points[targetPoint][otherPlayer] == 1
-    if targetPointOpen {
-        fmt.Printf("found possible move from %v to %v\n", startPoint, targetPoint)
-        newBackGammonState := BackgammonState{}
-        newBackGammonState.InitFromOtherState(currentState)
-        newBackGammonState.points[startPoint][playerTurn] -= 1
+func createNewBackGammonState(startPoint int, targetPoint int, playerTurn int, targetIsHit bool, currentState *BackgammonState) *BackgammonState {
+    newBackGammonState := BackgammonState{}
+    newBackGammonState.InitFromOtherState(currentState)
+    newBackGammonState.points[startPoint][playerTurn] -= 1
+    if targetPoint < 24 {
         newBackGammonState.points[targetPoint][playerTurn] += 1
+        otherPlayer := (playerTurn+1) % 2
         if targetIsHit {
             newBackGammonState.points[targetPoint][otherPlayer] -= 1
             newBackGammonState.bar[otherPlayer] += 1
         }
-        return &newBackGammonState
     }
-    return nil
+    newBackGammonState.FindIfAllCheckersOnHomeBoard()
+    return &newBackGammonState
 }
 
-func createNewBackGammonState(startPoint int, targetPoint int, playerTurn int, targetIsHit bool, currentState *BackgammonState) *BackgammonState {
-    otherPlayer := (playerTurn+1) % 2
-    newBackGammonState := BackgammonState{}
-    newBackGammonState.InitFromOtherState(currentState)
-    newBackGammonState.points[startPoint][playerTurn] -= 1
-    newBackGammonState.points[targetPoint][playerTurn] += 1
-    if targetIsHit {
-        newBackGammonState.points[targetPoint][otherPlayer] -= 1
-        newBackGammonState.bar[otherPlayer] += 1
+func (bgs *BackgammonState) getHighestPointWithChecker(playerTurn int) int {
+    highest := 0;
+    for i := 0; i<24; i++ {
+        if bgs.points[i][playerTurn] > 0 {
+            highest = i
+        }
     }
-    return &newBackGammonState
+    if playerTurn == 0 {
+        return 12 - highest    
+    } else {
+        return 24 - highest
+    }
 }
 
 func getFollowUpStateFromPoint(startPoint int, playerTurn int, diceRoll int, currentState *BackgammonState) *BackgammonState {
     otherPlayer := (playerTurn+1) % 2
     targetPoint := getFollowUpPoint(startPoint, playerTurn, diceRoll)
-    //playerCanBearOff := currentState.allCheckersOnHomeBoard[playerTurn]
     targetPointOnField := targetPoint >= 0 && targetPoint < 24
     targetPointOnFieldAndPointOpen := targetPointOnField && currentState.points[targetPoint][otherPlayer] < 2
     targetCanBeHit := targetPointOnFieldAndPointOpen && currentState.points[targetPoint][otherPlayer] == 1
     
     if (targetPointOnFieldAndPointOpen) {
         // create new state
-        fmt.Printf("found possible move from %v to %v\n", startPoint, targetPoint)
+        //fmt.Printf("found possible move from %v to %v\n", startPoint, targetPoint)
         newBackGammonState := createNewBackGammonState(startPoint, targetPoint, playerTurn, targetCanBeHit, currentState)
         return newBackGammonState
     }
+
+    if !targetPointOnField && currentState.allCheckersOnHomeBoard[playerTurn] == true {
+        if targetPoint == 24 {
+            newBackGammonState := createNewBackGammonState(startPoint, targetPoint, playerTurn, targetCanBeHit, currentState)
+            return newBackGammonState
+        }
+        highestPointWithChecker := currentState.getHighestPointWithChecker(playerTurn)
+        if (highestPointWithChecker >= 1 && highestPointWithChecker <= 6 && diceRoll > highestPointWithChecker) {
+            newBackGammonState := createNewBackGammonState(startPoint, targetPoint, playerTurn, targetCanBeHit, currentState)
+            return newBackGammonState
+        }
+    }  
     return nil
     
-    //targetIsExactBearOff := (playerTurn == 0 && targetPoint == 24) || (playerTurn == 1 && targetPoint == 12)
-    //if (playerCanBearOff && targetIsExactBearOff) {
-    // crete new state
-    //} 
-}
-
-func (bgs *BackgammonState) findAllPossibleFollowUpStatesWithSingleDiceRoll(diceRoll int, playerTurn int) []BackgammonState {
-    playerTurn--
-    possibleStates := make([]BackgammonState, 0, 100)
-    for i, _ := range bgs.points {
-        if bgs.points[i][playerTurn] > 0 {
-            newBackGammonState := getFollowUpStateFromPoint(i, playerTurn, diceRoll, bgs)
-            if newBackGammonState != nil {
-                possibleStates = append(possibleStates, *newBackGammonState)
-            }
-        }
-    } 
-    return possibleStates 
 }
 
 func (bgs *BackgammonState) Init() {

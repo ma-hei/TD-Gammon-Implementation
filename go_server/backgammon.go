@@ -15,6 +15,11 @@ type BackgammonState struct {
     bar []int
     allCheckersOnHomeBoard []bool
     checkersBearedOff []int
+    lastMove1 string
+    lastMove2 string
+    lastMove3 string
+    lastMove4 string
+    playerTurn int
 }
 
 func (bgs *BackgammonState) FindNumBearedOffCheckers() {
@@ -56,6 +61,20 @@ func (bgs *BackgammonState) InitFromString(c echo.Context) {
             bgs.points[i][player-1] = nCheckers
         }
     }
+    bar1s := c.FormValue("bar1")
+    bar1i, _ := strconv.Atoi(bar1s)
+    bar2s := c.FormValue("bar2")
+    bar2i, _ := strconv.Atoi(bar2s)
+    bgs.bar[0] = bar1i
+    bgs.bar[1] = bar2i
+    
+    bgs.lastMove1 = ""
+    bgs.lastMove2 = ""
+    bgs.lastMove3 = ""
+    bgs.lastMove4 = ""
+
+    bgs.playerTurn, _  = strconv.Atoi(c.FormValue("playerTurn"))
+
     bgs.FindIfAllCheckersOnHomeBoard()
 }
 
@@ -69,6 +88,15 @@ func (bgs *BackgammonState) InitFromOtherState(other *BackgammonState) {
     bgs.bar[1] = other.bar[1]
     bgs.allCheckersOnHomeBoard[0] = other.allCheckersOnHomeBoard[0]
     bgs.allCheckersOnHomeBoard[1] = other.allCheckersOnHomeBoard[1]
+
+    bgs.lastMove1 = other.lastMove1
+    bgs.lastMove2 = other.lastMove2
+    bgs.lastMove3 = other.lastMove3
+    bgs.lastMove4 = other.lastMove4
+    bgs.dice1 = other.dice1
+    bgs.dice1 = other.dice1
+    bgs.dice1 = other.dice1
+    bgs.dice2 = other.dice2
 }
 
 func (bgs *BackgammonState) printState() {
@@ -79,7 +107,6 @@ func (bgs *BackgammonState) printState() {
 }
 
 func (bgs *BackgammonState) rollDice() {
-    rand.Seed(85)
     bgs.dice1 = rand.Intn(6) + 1
     bgs.dice2 = rand.Intn(6) + 1
 }
@@ -88,13 +115,23 @@ func (bgs *BackgammonState) toString() string {
     stateString := ""
     for i := 0; i<24; i++ {
         stateString += strconv.Itoa(bgs.points[i][0])
+        stateString += "."
         stateString += strconv.Itoa(bgs.points[i][1])
         stateString += ","
     }
     stateString += strconv.Itoa(bgs.bar[0])
+    stateString += "."
     stateString += strconv.Itoa(bgs.bar[1])
+    stateString += ":"
+    //stateString += strconv.Itoa(bgs.dice1)
+    //stateString += ","
+    //stateString += strconv.Itoa(bgs.dice2)
+    //stateString += "lm1:" + bgs.lastMove1
+    //stateString += "lm2:" + bgs.lastMove2
     return stateString
 }
+
+
 
 func (bgs *BackgammonState) rollDiceAndFindFollowUpStates(playerTurn int) map[string]BackgammonState {
     bgs.rollDice()
@@ -260,18 +297,43 @@ func getFollowUpPoint(start int, playerTurn int, diceRoll int) int {
     return targetPoint
 }
 
+func (bgs *BackgammonState) AddMoveAsString(move string) {
+    if bgs.lastMove1 == "" {
+        bgs.lastMove1 = move
+    } else if bgs.lastMove2 == "" {
+        bgs.lastMove2 = move
+    } else if bgs.lastMove3 == "" {
+        bgs.lastMove3 = move
+    } else if bgs.lastMove4 == "" {
+        bgs.lastMove4 = move
+    }
+}
+
 func createNewBackGammonState(startPoint int, targetPoint int, playerTurn int, targetIsHit bool, currentState *BackgammonState) *BackgammonState {
     newBackGammonState := BackgammonState{}
     newBackGammonState.InitFromOtherState(currentState)
-    newBackGammonState.points[startPoint][playerTurn] -= 1
+    moveAsString := ""
+    if startPoint != -1 {
+        moveAsString = strconv.Itoa(startPoint) + "."
+        newBackGammonState.points[startPoint][playerTurn] -= 1
+    } else {
+        moveAsString = "b."
+        newBackGammonState.bar[playerTurn] -= 1
+    }
     if targetPoint < 24 {
+        moveAsString += strconv.Itoa(targetPoint)
         newBackGammonState.points[targetPoint][playerTurn] += 1
         otherPlayer := (playerTurn+1) % 2
         if targetIsHit {
+            moveAsString += "h"
             newBackGammonState.points[targetPoint][otherPlayer] -= 1
             newBackGammonState.bar[otherPlayer] += 1
         }
+    } else {
+        moveAsString += "off"
     }
+    fmt.Printf("---> move as string: %v\n", moveAsString)
+    newBackGammonState.AddMoveAsString(moveAsString)
     newBackGammonState.FindIfAllCheckersOnHomeBoard()
     return &newBackGammonState
 }

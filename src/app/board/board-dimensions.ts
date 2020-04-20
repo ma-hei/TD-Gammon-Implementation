@@ -102,7 +102,7 @@ export class BoardDimensions {
 
   static computeCheckerY(pointId: number, nCheckersOnPoint: number, boardDimensions: BoardDimensions) {
     let radius = boardDimensions.pointHeight / 9;
-    let offset = (nCheckersOnPoint * (radius * 2) + radius);
+    let offset = ((nCheckersOnPoint % 5) * (radius * 2) + radius) + Math.floor(nCheckersOnPoint/5) * 10
     let y;
     if (pointId > 11) {
       y = offset; 

@@ -23,6 +23,11 @@ export class Checker {
 
   moveCheckerToBar(numberCheckersAlreadyOnBar: number, boardDimensions: BoardDimensions) {
       this.x = BoardDimensions.computeCheckerOnBarX(boardDimensions);
-      this.y = BoardDimensions.computeCheckerOnBarY(true, numberCheckersAlreadyOnBar, boardDimensions); 
+      this.y = BoardDimensions.computeCheckerOnBarY(this.player==1, numberCheckersAlreadyOnBar, boardDimensions); 
   }  
+
+  moveCheckerToPoint(nCheckersAlreadyOnPoint: number, pointId: number, boardDimensions: BoardDimensions) {
+     this.x = BoardDimensions.computeCheckerX(pointId, boardDimensions);
+     this.y = BoardDimensions.computeCheckerY(pointId, nCheckersAlreadyOnPoint, boardDimensions);
+  }
 }

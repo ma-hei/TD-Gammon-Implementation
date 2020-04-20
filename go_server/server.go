@@ -2,10 +2,12 @@ package main
 
 import (
 	"net/http"
-	
+        "math/rand"
 	"github.com/labstack/echo"
         "github.com/labstack/echo/middleware"
         "fmt"
+
+        "strconv"
 )
 
 type User struct {
@@ -13,22 +15,40 @@ type User struct {
   Email string `json:"email" xml:"email"`
 }
 
+type Response struct {
+  ReturnState  string `json:"returnState" xml:"returnState"`
+  //  newState string `json:"state" xml:"state"`
+}
+
 func main() {
         //fmt.Printf("%v", len(b.points))
 	e := echo.New()
 	e.GET("/GetBoardUpdate", func(c echo.Context) error {
-              u := &User{
-              Name:  "Jon",
-              Email: "jon@labstack.com",
-              }
             b := BackgammonState{}
             b.InitFromString(c)
             b.printState()
-            followUpStates := b.rollDiceAndFindFollowUpStates(2)
-            for _, v := range followUpStates {
+            followUpStates := b.rollDiceAndFindFollowUpStates(b.playerTurn)
+            fmt.Printf("found %v states\n", len(followUpStates))
+            asList := make([]string, 0, len(followUpStates))
+            for k, v := range followUpStates {
                 fmt.Printf("--------------------\n")
-                v.rollDice()
-                fmt.Printf("found another state\n")
+                fmt.Printf("%v\n", k)
+                temp := k
+                temp += strconv.Itoa(v.dice1)
+                temp += ","
+                temp += strconv.Itoa(v.dice2)
+                temp += "lm1:" + v.lastMove1
+                temp += "lm2:" + v.lastMove2
+                temp += "lm3:" + v.lastMove3
+                temp += "lm4:" + v.lastMove4
+                asList = append(asList, temp)
+            }
+            if (len(followUpStates) > 0) {
+                stateToReturn := rand.Intn(len(followUpStates))
+                u := &Response{
+                  ReturnState:  asList[stateToReturn],
+                }
+                return c.JSON(http.StatusOK, u)
             }
             //followUpStates := b.findAllPossibleFollowUpStates(4, 2)
             //fmt.Printf("n follow up states %v\n", len(followUpStates))
@@ -36,6 +56,11 @@ func main() {
             //    fmt.Printf("------------------\n")
             //    s.printState()
             //}
+
+                  u := &User{
+                  Name:  "Jon",
+                  Email: "jon@labstack.com",
+                  }
             return c.JSON(http.StatusOK, u)
 	})
 

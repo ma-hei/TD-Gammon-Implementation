@@ -30,6 +30,17 @@ func main() {
             followUpStates := b.rollDiceAndFindFollowUpStates(b.playerTurn)
             fmt.Printf("found %v states\n", len(followUpStates))
             asList := make([]string, 0, len(followUpStates))
+            if len(followUpStates) == 0 {
+               temp := b.toString()
+               temp += strconv.Itoa(b.dice1)
+               temp += ","
+               temp += strconv.Itoa(b.dice2)
+               temp += "lm1:" + b.lastMove1
+               temp += "lm2:" + b.lastMove2
+               temp += "lm3:" + b.lastMove3
+               temp += "lm4:" + b.lastMove4
+               asList = append(asList,temp)
+            }
             for k, v := range followUpStates {
                 fmt.Printf("--------------------\n")
                 fmt.Printf("%v\n", k)
@@ -43,13 +54,12 @@ func main() {
                 temp += "lm4:" + v.lastMove4
                 asList = append(asList, temp)
             }
-            if (len(followUpStates) > 0) {
-                stateToReturn := rand.Intn(len(followUpStates))
-                u := &Response{
-                  ReturnState:  asList[stateToReturn],
-                }
-                return c.JSON(http.StatusOK, u)
+            stateToReturn := rand.Intn(len(asList))
+            fmt.Printf("-----> returning %v\n", asList[stateToReturn])
+            u := &Response{
+              ReturnState:  asList[stateToReturn],
             }
+            return c.JSON(http.StatusOK, u)
             //followUpStates := b.findAllPossibleFollowUpStates(4, 2)
             //fmt.Printf("n follow up states %v\n", len(followUpStates))
             //for _, s := range followUpStates {
@@ -57,11 +67,6 @@ func main() {
             //    s.printState()
             //}
 
-                  u := &User{
-                  Name:  "Jon",
-                  Email: "jon@labstack.com",
-                  }
-            return c.JSON(http.StatusOK, u)
 	})
 
         e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{

@@ -89,7 +89,10 @@ export class BoardDimensions {
       y = boardDimensions.boardHeight - offset;
     }
     return y;
+  }
 
+  static computeCheckerBearOffX(boardDimensions: BoardDimensions) {
+    return boardDimensions.boardWidth + 300;
   }
 
   static computeCheckerX(pointId: number, boardDimensions: BoardDimensions) : number {

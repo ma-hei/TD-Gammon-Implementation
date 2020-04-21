@@ -57,8 +57,8 @@ export class BoardComponent implements OnInit {
     this.subject = new Subject<number>();
     this.subject.subscribe(value => {
         console.log("done with turn " + value);
-        if (value < 5) {
-            setTimeout(this.makeTurn(value), 5000);
+        if (value < 60) {
+            setTimeout(this.makeTurn(value), 50000);
         }
     });
     this.makeTurn(0); 
@@ -90,14 +90,14 @@ export class BoardComponent implements OnInit {
           toPoint = parseInt(second.substring(0, idxh));
           isHit = true;
       }
+      if (isHit) {
+          this.putCheckerOnBar(toPoint);
+      }
       if (first == "b") {
           this.moveCheckerFromBar(toPoint, player);
       } else {
           let fromPoint = parseInt(first);
           if (toPoint < 24) {
-              if (isHit) {
-                  this.putCheckerOnBar(toPoint);
-              }
               this.moveCheckerFromPointToPoint(fromPoint, toPoint);
           } else {
               this.bearCheckerOff(fromPoint);          
@@ -131,6 +131,7 @@ export class BoardComponent implements OnInit {
   bearCheckerOff(fromPoint) {
       let nCheckersOnPointOfPlayer = this.checkersOnPoint.get(fromPoint).length;
       let checker = this.checkersOnPoint.get(fromPoint)[nCheckersOnPointOfPlayer -1];
+      checker.bearCheckerOff(this.boardDimensions);
       this.checkersOnPoint.get(fromPoint).splice(-1,1);
   }
 
@@ -155,6 +156,7 @@ export class BoardComponent implements OnInit {
   }
 
   putCheckerOnBar(fromPoint: number) {
+     console.log("putting checker on bar");
      let nCheckersOnPoint = this.checkersOnPoint.get(fromPoint).length
      let checker = this.checkersOnPoint.get(fromPoint)[nCheckersOnPoint-1];
      let nCheckersOnBarOfPlayer = this.checkersOnBar.get(checker.player - 1).length;

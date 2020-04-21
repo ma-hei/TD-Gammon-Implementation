@@ -340,15 +340,19 @@ func createNewBackGammonState(startPoint int, targetPoint int, playerTurn int, t
 
 func (bgs *BackgammonState) getHighestPointWithChecker(playerTurn int) int {
     highest := 0;
+    lowest := 24;
     for i := 0; i<24; i++ {
         if bgs.points[i][playerTurn] > 0 {
             highest = i
         }
+        if bgs.points[i][playerTurn] > 0 && lowest == 24 {
+            lowest = i
+        }
     }
     if playerTurn == 0 {
-        return 12 - highest    
+        return 24 - lowest    
     } else {
-        return 24 - highest
+        return 12 - highest
     }
 }
 
@@ -372,6 +376,7 @@ func getFollowUpStateFromPoint(startPoint int, playerTurn int, diceRoll int, cur
             return newBackGammonState
         }
         highestPointWithChecker := currentState.getHighestPointWithChecker(playerTurn)
+        fmt.Printf("------> %v\n", highestPointWithChecker);
         if (highestPointWithChecker >= 1 && highestPointWithChecker <= 6 && diceRoll > highestPointWithChecker) {
             newBackGammonState := createNewBackGammonState(startPoint, targetPoint, playerTurn, targetCanBeHit, currentState)
             return newBackGammonState

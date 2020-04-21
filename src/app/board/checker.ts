@@ -30,4 +30,8 @@ export class Checker {
      this.x = BoardDimensions.computeCheckerX(pointId, boardDimensions);
      this.y = BoardDimensions.computeCheckerY(pointId, nCheckersAlreadyOnPoint, boardDimensions);
   }
+
+  bearCheckerOff(boardDimensions: BoardDimensions) {
+     this.x = BoardDimensions.computeCheckerBearOffX(boardDimensions);
+  }
 }

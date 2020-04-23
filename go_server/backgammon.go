@@ -22,6 +22,11 @@ type BackgammonState struct {
     playerTurn int
 }
 
+func (bgs *BackgammonState) PlayerWins(player int) bool {
+    bgs.FindNumBearedOffCheckers()
+    return bgs.checkersBearedOff[player] == 15
+}
+
 func (bgs *BackgammonState) FindNumBearedOffCheckers() {
     var numCheckersOnFieldPlayer1 int = 0
     var numCheckersOnFieldPlayer2 int = 0
@@ -74,6 +79,7 @@ func (bgs *BackgammonState) InitFromString(c echo.Context) {
     bgs.lastMove4 = ""
 
     bgs.playerTurn, _  = strconv.Atoi(c.FormValue("playerTurn"))
+    bgs.playerTurn -= 1
 
     bgs.FindIfAllCheckersOnHomeBoard()
 }
@@ -97,6 +103,8 @@ func (bgs *BackgammonState) InitFromOtherState(other *BackgammonState) {
     bgs.dice1 = other.dice1
     bgs.dice1 = other.dice1
     bgs.dice2 = other.dice2
+  
+    bgs.playerTurn = other.playerTurn
 }
 
 func (bgs *BackgammonState) printState() {
@@ -232,7 +240,6 @@ func removeDuplicateStates(states []BackgammonState) []BackgammonState {
 }
 
 func findAllPossibleFollowUpStatesFromStatesWithSingleDiceRoll(diceRoll int, playerTurn int, startStates []BackgammonState) []BackgammonState{
-    playerTurn--
     possibleFollowUpStates := make([]BackgammonState, 0, 100)
     for _, s := range startStates {
         // If a checker is on the bar move that first
@@ -376,7 +383,6 @@ func getFollowUpStateFromPoint(startPoint int, playerTurn int, diceRoll int, cur
             return newBackGammonState
         }
         highestPointWithChecker := currentState.getHighestPointWithChecker(playerTurn)
-        fmt.Printf("------> %v\n", highestPointWithChecker);
         if (highestPointWithChecker >= 1 && highestPointWithChecker <= 6 && diceRoll > highestPointWithChecker) {
             newBackGammonState := createNewBackGammonState(startPoint, targetPoint, playerTurn, targetCanBeHit, currentState)
             return newBackGammonState

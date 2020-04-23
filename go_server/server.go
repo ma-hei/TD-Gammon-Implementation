@@ -35,6 +35,9 @@ func main() {
                temp += strconv.Itoa(b.dice1)
                temp += ","
                temp += strconv.Itoa(b.dice2)
+               if b.PlayerWins(b.playerTurn) {
+                   temp += "!winner!"
+               }
                temp += "lm1:" + b.lastMove1
                temp += "lm2:" + b.lastMove2
                temp += "lm3:" + b.lastMove3
@@ -48,6 +51,9 @@ func main() {
                 temp += strconv.Itoa(v.dice1)
                 temp += ","
                 temp += strconv.Itoa(v.dice2)
+                if v.PlayerWins(v.playerTurn) {
+                   temp += "!winner!"
+                }
                 temp += "lm1:" + v.lastMove1
                 temp += "lm2:" + v.lastMove2
                 temp += "lm3:" + v.lastMove3

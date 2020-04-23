@@ -40,14 +40,7 @@ export class BoardComponent implements OnInit {
       this.points[i] = new Point(i, this.boardDimensions); 
       this.checkersOnPoint.set(i, new Array());
     } 
-    this.putNewCheckersOnPoint(5, 0, 1);
-    this.putNewCheckersOnPoint(3, 4, 2);
-    this.putNewCheckersOnPoint(5, 6, 2);
-    this.putNewCheckersOnPoint(5, 12, 2);
-    this.putNewCheckersOnPoint(2, 11, 1);
-    this.putNewCheckersOnPoint(3, 16, 1);
-    this.putNewCheckersOnPoint(5, 18, 1);
-    this.putNewCheckersOnPoint(2, 23, 2);
+    this.initialize();
     //this.putCheckerOnBar(4);
     //this.putCheckerOnBar(4);
     //this.putCheckerOnBar(22);
@@ -57,7 +50,7 @@ export class BoardComponent implements OnInit {
     this.subject = new Subject<number>();
     this.subject.subscribe(value => {
         console.log("done with turn " + value);
-        if (value < 60) {
+        if (value < 200) {
             setTimeout(this.makeTurn(value), 50000);
         }
     });
@@ -69,9 +62,24 @@ export class BoardComponent implements OnInit {
       console.log("getting random dice roll and board update for player " + playerTurn);
       this.boardUpdateService.getUpdate(this.checkersOnPoint, this.checkersOnBar, playerTurn).subscribe((data) => {
          console.log(data["returnState"]);
-         this.updateBoard(data["returnState"], playerTurn);
-         this.subject.next(turnNumber + 1);
+         if (!(data["returnState"].indexOf("!winner!") != -1)) {
+           this.updateBoard(data["returnState"], playerTurn);
+           this.subject.next(turnNumber + 1);
+         } else {
+           console.log("DONE!");
+         }
       });
+  }
+
+  initialize() {
+    this.putNewCheckersOnPoint(5, 0, 1);
+    this.putNewCheckersOnPoint(3, 4, 2);
+    this.putNewCheckersOnPoint(5, 6, 2);
+    this.putNewCheckersOnPoint(5, 12, 2);
+    this.putNewCheckersOnPoint(2, 11, 1);
+    this.putNewCheckersOnPoint(3, 16, 1);
+    this.putNewCheckersOnPoint(5, 18, 1);
+    this.putNewCheckersOnPoint(2, 23, 2);
   }
 
   performMove(move: string, player: number) {

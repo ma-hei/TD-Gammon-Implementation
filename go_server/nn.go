@@ -18,6 +18,9 @@ type NeuralNetwork struct {
     activations []*mat.Dense
     z []*mat.Dense
     errors []*mat.Dense
+    etraces []*mat.Dense
+    derivativeWeights []*mat.Dense
+    derivativeBiases []*mat.Dense
 }
 
 func (nn *NeuralNetwork) InitBiases() {
@@ -57,6 +60,25 @@ func (nn *NeuralNetwork) Init(nNodesInLayer []int) {
     nn.InitWeights()
     nn.InitBiases()
     nn.InitActivations()
+    nn.InitETracesAndDerivatives()
+}
+
+func (nn *NeuralNetwork) InitETracesAndDerivatives() {
+    nn.etraces = make([]*mat.Dense, nn.nLayers)
+    nn.derivativeWeights = make([]*mat.Dense, nn.nLayers)
+    for i := 1; i < nn.nLayers; i++ {
+        nNodesPrevious := nn.nNodesInLayer[i-1]
+        nNodesCurrent := nn.nNodesInLayer[i]
+        data := GenerateRandomValues(nNodesPrevious * nNodesCurrent)
+        nn.etraces[i-1] = mat.NewDense(nNodesCurrent, nNodesPrevious, data)
+        nn.derivativeWeights[i-1] = mat.NewDense(nNodesCurrent, nNodesPrevious, data)
+    }
+    nn.derivativeBiases = make([]*mat.Dense, nn.nLayers)
+    for i := 1; i < nn.nLayers; i++ {
+        nNodes := nn.nNodesInLayer[i]
+        data := GenerateRandomValues(nNodes)
+        nn.derivativeBiases[i-1] = mat.NewDense(nNodes, 1, data)
+    }
 }
 
 func GenerateRandomValues(length int) []float64 {
@@ -78,6 +100,32 @@ func (nn *NeuralNetwork) FeedForward(input []float64) ([]*mat.Dense, []*mat.Dens
     return nn.z, nn.activations
 }
 
+// computes derivative of activation in final layer wrt. weights
+func (nn *NeuralNetwork) BackpropagateLastActivation() []*mat.Dense{
+     f1 := mat.NewDense(nn.nNodesInLayer[nn.nLayers - 1], 1, nil)
+     for i := 0; i < nn.nNodesInLayer[nn.nLayers - 1]; i++ {
+         f1.Set(i,0,1)
+     }
+     f2 := mat.DenseCopyOf(nn.z[nn.nLayers - 1])
+     f2.Apply(SigmoidDiffWrapper, f2) 
+     nn.errors[nn.nLayers - 1] = HadamardProduct(f1, f2)
+     // compute derivative of last layer weights
+     nn.derivativeWeights[nn.nLayers - 2].Mul(nn.errors[nn.nLayers - 1], nn.activations[nn.nLayers-2].T())
+     nn.derivativeBiases[nn.nLayers - 2].Copy(nn.errors[nn.nLayers - 1])
+     for i := nn.nLayers - 2; i > 0; i-- {
+         temp := nn.weights[i].T()
+         Wtranspose := mat.DenseCopyOf(temp)
+         nn.errors[i].Mul(Wtranspose, nn.errors[i+1])
+         f2 := mat.DenseCopyOf(nn.z[i])
+         f2.Apply(SigmoidDiffWrapper, f2) 
+         nn.errors[i] = HadamardProduct(nn.errors[i], f2)
+         nn.derivativeWeights[i - 1].Mul(nn.errors[i], nn.activations[i-1].T())
+         nn.derivativeBiases[i - 1].Copy(nn.errors[i - 1])
+     }
+     return nn.errors
+}
+
+// computes derivative of error function 1/2(y-y')^2 wrt.weights
 func (nn *NeuralNetwork) Backpropagate(input []float64) []*mat.Dense{
      f1 := mat.NewDense(len(input), 1, nil)
      for i := 0; i < len(input); i++ {

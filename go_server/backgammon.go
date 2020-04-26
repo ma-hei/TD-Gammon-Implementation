@@ -105,6 +105,7 @@ func (bgs *BackgammonState) InitFromOtherState(other *BackgammonState) {
     bgs.dice2 = other.dice2
   
     bgs.playerTurn = other.playerTurn
+    bgs.FindNumBearedOffCheckers()
 }
 
 func (bgs *BackgammonState) printState() {
@@ -403,6 +404,31 @@ func (bgs *BackgammonState) Init() {
     bgs.bar[0] = 0
     bgs.bar[1] = 0
     bgs.allCheckersOnHomeBoard = make([]bool, 2)
+    bgs.allCheckersOnHomeBoard[0] = false;
+    bgs.allCheckersOnHomeBoard[1] = false;
     bgs.checkersBearedOff = make([]int, 2)
+    bgs.checkersBearedOff[0] = 0;
+    bgs.checkersBearedOff[1] = 0;
+}
+
+func (bgs *BackgammonState) InitBeginPosition() {
+   bgs.Init()
+   //this.putNewCheckersOnPoint(5, 0, 1);
+   bgs.points[0][0] =  4;
+   //this.putNewCheckersOnPoint(3, 4, 2);
+   bgs.points[4][1] = 3;
+   //this.putNewCheckersOnPoint(5, 6, 2);
+   bgs.points[6][1] = 5;
+   //this.putNewCheckersOnPoint(5, 12, 2);
+   bgs.points[12][1] = 5;
+   //this.putNewCheckersOnPoint(2, 11, 1);
+   bgs.points[11][0] = 2;
+   //this.putNewCheckersOnPoint(3, 16, 1);
+   bgs.points[16][0] = 3;
+   //this.putNewCheckersOnPoint(5, 18, 1);
+   bgs.points[18][0] = 5;
+   //this.putNewCheckersOnPoint(2, 23, 2);
+   bgs.points[23][1] = 2;
+   bgs.playerTurn = 0
 }
 

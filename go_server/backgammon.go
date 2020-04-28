@@ -144,7 +144,7 @@ func (bgs *BackgammonState) toString() string {
 
 func (bgs *BackgammonState) rollDiceAndFindFollowUpStates(playerTurn int) map[string]BackgammonState {
     bgs.rollDice()
-    fmt.Printf("----- rolled %v %v\n", bgs.dice1, bgs.dice2)
+    //fmt.Printf("----- rolled %v %v\n", bgs.dice1, bgs.dice2)
     //doubleRoll := bgs.dice1 == bgs.dice2
     return bgs.findFollowUpStatesWithDiceRolled(playerTurn)
 }
@@ -155,15 +155,15 @@ func (bgs *BackgammonState) findFollowUpStatesWithTwoSameDiceRolled(playerTurn i
     start := []BackgammonState{*bgs}
 
     for i := 0; i<4; i++ {
-        fmt.Printf("---- using dice %v for %v time\n", diceRolled, (i+1))
+        //fmt.Printf("---- using dice %v for %v time\n", diceRolled, (i+1))
         followUpStatesAfterDiceUsed := findAllPossibleFollowUpStatesFromStatesWithSingleDiceRoll(diceRolled, playerTurn, start)
         if len(followUpStatesAfterDiceUsed) == 0 {
-            fmt.Printf("---- can't use dice %v times\n", (i+1))
+            //fmt.Printf("---- can't use dice %v times\n", (i+1))
             break;
         } 
         followUpStatesAfterDiceUsed = removeDuplicateStates(followUpStatesAfterDiceUsed)
         start = followUpStatesAfterDiceUsed
-        fmt.Printf("---- find %v states\n", len(start))
+        //fmt.Printf("---- find %v states\n", len(start))
     }
     
     addFollowUpStatesToAllStates(start, allFollowUpStates)
@@ -176,21 +176,21 @@ func (bgs *BackgammonState) findFollowUpStatesWithTwoDifferentDiceRolled(playerT
     dice1 := bgs.dice1
     dice2 := bgs.dice2
     start := []BackgammonState{*bgs}
-    fmt.Printf("---- from current state, using first dice %v\n", dice1)
+    //fmt.Printf("---- from current state, using first dice %v\n", dice1)
     usingOnlyFirstDice := findAllPossibleFollowUpStatesFromStatesWithSingleDiceRoll(dice1, playerTurn, start)
-    fmt.Printf("---- found  %v states when using only first dice\n", len(usingOnlyFirstDice))
+    //fmt.Printf("---- found  %v states when using only first dice\n", len(usingOnlyFirstDice))
     
-    fmt.Printf("---- after first dice used, using second dice %v\n", dice2)    
+    //fmt.Printf("---- after first dice used, using second dice %v\n", dice2)    
     usingFirstDiceThenSecondDice := findAllPossibleFollowUpStatesFromStatesWithSingleDiceRoll(dice2, playerTurn, usingOnlyFirstDice)
-    fmt.Printf("---- found  %v states when using first then second dice\n", len(usingFirstDiceThenSecondDice))
+    //fmt.Printf("---- found  %v states when using first then second dice\n", len(usingFirstDiceThenSecondDice))
 
-    fmt.Printf("---- from current state, using second dice %v\n", dice2)
+    //fmt.Printf("---- from current state, using second dice %v\n", dice2)
     usingOnlySecondDice := findAllPossibleFollowUpStatesFromStatesWithSingleDiceRoll(dice2, playerTurn, start)
-    fmt.Printf("---- found  %v states when using only second dice\n", len(usingOnlySecondDice))
+    //fmt.Printf("---- found  %v states when using only second dice\n", len(usingOnlySecondDice))
 
-    fmt.Printf("---- after second dice used, using first dice %v\n", dice1)    
+    //fmt.Printf("---- after second dice used, using first dice %v\n", dice1)    
     usingSecondDiceThenFirstDice := findAllPossibleFollowUpStatesFromStatesWithSingleDiceRoll(dice1, playerTurn, usingOnlySecondDice)
-    fmt.Printf("---- found  %v states when using second dice then first dice\n", len(usingSecondDiceThenFirstDice))
+    //fmt.Printf("---- found  %v states when using second dice then first dice\n", len(usingSecondDiceThenFirstDice))
 
     // If it was possible to use both dice, then return that as follow up states
     if (len(usingFirstDiceThenSecondDice) > 0 || len(usingSecondDiceThenFirstDice) > 0) {
@@ -340,7 +340,7 @@ func createNewBackGammonState(startPoint int, targetPoint int, playerTurn int, t
     } else {
         moveAsString += "off"
     }
-    fmt.Printf("---> move as string: %v\n", moveAsString)
+    //fmt.Printf("---> move as string: %v\n", moveAsString)
     newBackGammonState.AddMoveAsString(moveAsString)
     newBackGammonState.FindIfAllCheckersOnHomeBoard()
     return &newBackGammonState

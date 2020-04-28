@@ -18,7 +18,8 @@ type NeuralNetwork struct {
     activations []*mat.Dense
     z []*mat.Dense
     errors []*mat.Dense
-    etraces []*mat.Dense
+    etracesWeights []*mat.Dense
+    etracesBiases []*mat.Dense
     derivativeWeights []*mat.Dense
     derivativeBiases []*mat.Dense
 }
@@ -64,20 +65,24 @@ func (nn *NeuralNetwork) Init(nNodesInLayer []int) {
 }
 
 func (nn *NeuralNetwork) InitETracesAndDerivatives() {
-    nn.etraces = make([]*mat.Dense, nn.nLayers)
+    nn.etracesWeights = make([]*mat.Dense, nn.nLayers)
     nn.derivativeWeights = make([]*mat.Dense, nn.nLayers)
     for i := 1; i < nn.nLayers; i++ {
         nNodesPrevious := nn.nNodesInLayer[i-1]
         nNodesCurrent := nn.nNodesInLayer[i]
-        data := GenerateRandomValues(nNodesPrevious * nNodesCurrent)
-        nn.etraces[i-1] = mat.NewDense(nNodesCurrent, nNodesPrevious, data)
-        nn.derivativeWeights[i-1] = mat.NewDense(nNodesCurrent, nNodesPrevious, data)
+        nn.etracesWeights[i-1] = mat.NewDense(nNodesCurrent, nNodesPrevious, nil)
+        nn.derivativeWeights[i-1] = mat.NewDense(nNodesCurrent, nNodesPrevious, nil)
+        nn.derivativeWeights[i-1].Zero()
+        nn.etracesWeights[i-1].Zero()
     }
+    nn.etracesBiases = make([]*mat.Dense, nn.nLayers)
     nn.derivativeBiases = make([]*mat.Dense, nn.nLayers)
     for i := 1; i < nn.nLayers; i++ {
         nNodes := nn.nNodesInLayer[i]
-        data := GenerateRandomValues(nNodes)
-        nn.derivativeBiases[i-1] = mat.NewDense(nNodes, 1, data)
+        nn.derivativeBiases[i-1] = mat.NewDense(nNodes, 1, nil)
+        nn.etracesBiases[i-1] = mat.NewDense(nNodes, 1, nil)
+        nn.derivativeBiases[i-1].Zero()
+        nn.etracesBiases[i-1].Zero()
     }
 }
 
@@ -85,7 +90,10 @@ func GenerateRandomValues(length int) []float64 {
     data := make([]float64, length)
     for k := range data {
         rand.Seed(time.Now().UnixNano())
+        temp := math.Abs(rand.NormFloat64())
+        temp = temp/1000
         data[k] = rand.NormFloat64()
+        
     }
     return data
 }
@@ -120,11 +128,33 @@ func (nn *NeuralNetwork) BackpropagateLastActivation() []*mat.Dense{
          f2.Apply(SigmoidDiffWrapper, f2) 
          nn.errors[i] = HadamardProduct(nn.errors[i], f2)
          nn.derivativeWeights[i - 1].Mul(nn.errors[i], nn.activations[i-1].T())
-         nn.derivativeBiases[i - 1].Copy(nn.errors[i - 1])
+         nn.derivativeBiases[i - 1].Copy(nn.errors[i])
      }
      return nn.errors
 }
 
+func (nn *NeuralNetwork) UpdateEligibilityTraceWithLastDerivative() {
+    learnRate := 0.9
+    for i := 0; i < nn.nLayers-1; i++ {
+        nn.etracesWeights[i].Scale(learnRate, nn.etracesWeights[i])
+        nn.etracesWeights[i].Add(nn.etracesWeights[i], nn.derivativeWeights[i])
+        nn.etracesBiases[i].Scale(learnRate, nn.etracesBiases[i])
+        nn.etracesBiases[i].Add(nn.etracesBiases[i], nn.derivativeBiases[i])
+    }
+}
+
+func (nn *NeuralNetwork) TdUpdate(reward int, newStateValue float64, oldStateValue float64) {
+    learnRate := 0.2
+    for i := 0; i < nn.nLayers-1; i++ {
+        temp := learnRate * float64(reward) * newStateValue * oldStateValue
+        temp2 := mat.DenseCopyOf(nn.etracesWeights[i])
+        temp2.Scale(temp, temp2)
+        nn.weights[i].Add(nn.weights[i], temp2)
+        temp3 := mat.DenseCopyOf(nn.etracesBiases[i])
+        temp3.Scale(temp, temp3)
+        nn.biases[i].Add(nn.biases[i], temp3)
+    }
+}
 // computes derivative of error function 1/2(y-y')^2 wrt.weights
 func (nn *NeuralNetwork) Backpropagate(input []float64) []*mat.Dense{
      f1 := mat.NewDense(len(input), 1, nil)

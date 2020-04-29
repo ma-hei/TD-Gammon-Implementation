@@ -22,6 +22,12 @@ type NeuralNetwork struct {
     etracesBiases []*mat.Dense
     derivativeWeights []*mat.Dense
     derivativeBiases []*mat.Dense
+    
+    etracesWeightsSplit [][]*mat.Dense
+    etracesBiasesSplit [][]*mat.Dense
+    derivativeWeightsSplit [][]*mat.Dense
+    derivativeBiasesSplit [][]*mat.Dense
+
 }
 
 func (nn *NeuralNetwork) InitBiases() {
@@ -65,7 +71,13 @@ func (nn *NeuralNetwork) Init(nNodesInLayer []int) {
 }
 
 func (nn *NeuralNetwork) InitETracesAndDerivatives() {
+    nn.etracesWeightsSplit = make([][]*mat.Dense, 2)
+    nn.etracesWeightsSplit[0] = make([]*mat.Dense, nn.nLayers)
+    nn.etracesWeightsSplit[1] = make([]*mat.Dense, nn.nLayers)
     nn.etracesWeights = make([]*mat.Dense, nn.nLayers)
+    nn.derivativeWeightsSplit = make([][]*mat.Dense, 2)
+    nn.derivativeWeightsSplit[0] = make([]*mat.Dense, nn.nLayers)
+    nn.derivativeWeightsSplit[1] = make([]*mat.Dense, nn.nLayers)
     nn.derivativeWeights = make([]*mat.Dense, nn.nLayers)
     for i := 1; i < nn.nLayers; i++ {
         nNodesPrevious := nn.nNodesInLayer[i-1]
@@ -74,8 +86,22 @@ func (nn *NeuralNetwork) InitETracesAndDerivatives() {
         nn.derivativeWeights[i-1] = mat.NewDense(nNodesCurrent, nNodesPrevious, nil)
         nn.derivativeWeights[i-1].Zero()
         nn.etracesWeights[i-1].Zero()
+        nn.etracesWeightsSplit[0][i-1] = mat.NewDense(nNodesCurrent, nNodesPrevious, nil)
+        nn.etracesWeightsSplit[0][i-1].Zero()
+        nn.etracesWeightsSplit[1][i-1] = mat.NewDense(nNodesCurrent, nNodesPrevious, nil)
+        nn.etracesWeightsSplit[1][i-1].Zero()
+        nn.derivativeWeightsSplit[0][i-1] =  mat.NewDense(nNodesCurrent, nNodesPrevious, nil)
+        nn.derivativeWeightsSplit[0][i-1].Zero()
+        nn.derivativeWeightsSplit[1][i-1] = mat.NewDense(nNodesCurrent, nNodesPrevious, nil)
+        nn.derivativeWeightsSplit[1][i-1].Zero()
     }
+    nn.etracesBiasesSplit = make([][]*mat.Dense, 2)
+    nn.etracesBiasesSplit[0] = make([]*mat.Dense, nn.nLayers)
+    nn.etracesBiasesSplit[1] = make([]*mat.Dense, nn.nLayers)
     nn.etracesBiases = make([]*mat.Dense, nn.nLayers)
+    nn.derivativeBiasesSplit = make([][]*mat.Dense, 2)
+    nn.derivativeBiasesSplit[0] = make([]*mat.Dense, nn.nLayers) 
+    nn.derivativeBiasesSplit[1] = make([]*mat.Dense, nn.nLayers)
     nn.derivativeBiases = make([]*mat.Dense, nn.nLayers)
     for i := 1; i < nn.nLayers; i++ {
         nNodes := nn.nNodesInLayer[i]
@@ -83,6 +109,14 @@ func (nn *NeuralNetwork) InitETracesAndDerivatives() {
         nn.etracesBiases[i-1] = mat.NewDense(nNodes, 1, nil)
         nn.derivativeBiases[i-1].Zero()
         nn.etracesBiases[i-1].Zero()
+        nn.etracesBiasesSplit[0][i-1] = mat.NewDense(nNodes, 1, nil)
+        nn.etracesBiasesSplit[0][i-1].Zero()
+        nn.etracesBiasesSplit[1][i-1] = mat.NewDense(nNodes, 1, nil)
+        nn.etracesBiasesSplit[1][i-1].Zero()
+        nn.derivativeBiasesSplit[0][i-1] = mat.NewDense(nNodes, 1, nil)
+        nn.derivativeBiasesSplit[0][i-1].Zero()
+        nn.derivativeBiasesSplit[1][i-1] = mat.NewDense(nNodes, 1, nil)
+        nn.derivativeBiasesSplit[1][i-1].Zero()
     }
 }
 
@@ -90,10 +124,9 @@ func GenerateRandomValues(length int) []float64 {
     data := make([]float64, length)
     for k := range data {
         rand.Seed(time.Now().UnixNano())
-        temp := math.Abs(rand.NormFloat64())
-        temp = temp/1000
-        data[k] = rand.NormFloat64()
-        
+        temp := rand.NormFloat64()
+        temp = temp/10000.0
+        data[k] = temp
     }
     return data
 }
@@ -107,6 +140,10 @@ func (nn *NeuralNetwork) FeedForward(input []float64) ([]*mat.Dense, []*mat.Dens
     }
     return nn.z, nn.activations
 }
+
+//func (nn *NeuralNetwork) BackpropagateLastActivation2() []*mat.Dense {
+//    f1 := mat.NewDense(nn.nNodesInLayer[
+//}
 
 // computes derivative of activation in final layer wrt. weights
 func (nn *NeuralNetwork) BackpropagateLastActivation() []*mat.Dense{
@@ -134,7 +171,7 @@ func (nn *NeuralNetwork) BackpropagateLastActivation() []*mat.Dense{
 }
 
 func (nn *NeuralNetwork) UpdateEligibilityTraceWithLastDerivative() {
-    learnRate := 0.9
+    learnRate := 0.2
     for i := 0; i < nn.nLayers-1; i++ {
         nn.etracesWeights[i].Scale(learnRate, nn.etracesWeights[i])
         nn.etracesWeights[i].Add(nn.etracesWeights[i], nn.derivativeWeights[i])
@@ -143,10 +180,10 @@ func (nn *NeuralNetwork) UpdateEligibilityTraceWithLastDerivative() {
     }
 }
 
-func (nn *NeuralNetwork) TdUpdate(reward int, newStateValue float64, oldStateValue float64) {
-    learnRate := 0.2
+func (nn *NeuralNetwork) TdUpdate(reward float64, newStateValue float64, oldStateValue float64) {
+    learnRate := 0.05
     for i := 0; i < nn.nLayers-1; i++ {
-        temp := learnRate * float64(reward) * newStateValue * oldStateValue
+        temp := learnRate * (reward + newStateValue - oldStateValue)
         temp2 := mat.DenseCopyOf(nn.etracesWeights[i])
         temp2.Scale(temp, temp2)
         nn.weights[i].Add(nn.weights[i], temp2)

@@ -176,16 +176,17 @@ func (bgs *BackgammonState) putRandomOnBar(playerTurn int) bool {
 
 func (bgs *BackgammonState) rollDiceAndFindFollowUpStates(playerTurn int) (map[string]BackgammonState, bool) {
     if (bgs.PlayerWins(playerTurn) || bgs.PlayerWins((playerTurn + 1)%2)) {
+        //fmt.Printf("Current State is a win\n")
         followUpStates := make(map[string]BackgammonState)
         newBackGammonState := BackgammonState{}
         newBackGammonState.InitFromOtherState(bgs)
-        newBackGammonState.playerTurn = ((playerTurn + 1)%2)
+        newBackGammonState.playerTurn = ((playerTurn + 1) % 2)
         followUpStates[newBackGammonState.toString()] = newBackGammonState 
         return followUpStates, true
     }
     bgs.rollDice()
-    bgs.dice1 = 3
-    bgs.dice2 = 5
+    //bgs.dice1 = 3
+    //bgs.dice2 = 5
     bgs.playerTurn = playerTurn
     //fmt.Printf("----- player %v rolled %v %v\n", playerTurn, bgs.dice1, bgs.dice2)
     //doubleRoll := bgs.dice1 == bgs.dice2
@@ -193,6 +194,7 @@ func (bgs *BackgammonState) rollDiceAndFindFollowUpStates(playerTurn int) (map[s
     if len(temp) == 0 {
        newBackGammonState := BackgammonState{}
        newBackGammonState.InitFromOtherState(bgs)
+       newBackGammonState.playerTurn = ((playerTurn + 1) % 2)
        temp[newBackGammonState.toString()] = newBackGammonState
     }
     return temp, false
@@ -369,6 +371,7 @@ func (bgs *BackgammonState) AddMoveAsString(move string) {
 func createNewBackGammonState(startPoint int, targetPoint int, playerTurn int, targetIsHit bool, currentState *BackgammonState) *BackgammonState {
     newBackGammonState := BackgammonState{}
     newBackGammonState.InitFromOtherState(currentState)
+    newBackGammonState.playerTurn = ((playerTurn + 1) % 2)
     moveAsString := ""
     if startPoint != -1 {
         moveAsString = strconv.Itoa(startPoint) + "."
@@ -690,6 +693,37 @@ func (bgs *BackgammonState) InitBeginPosition8() {
    bgs.points[9][1] = 2;
    bgs.points[10][1] = 2;
    bgs.points[11][1] = 0;
+   bgs.playerTurn = 0
+   bgs.FindIfAllCheckersOnHomeBoard() 
+}
+
+func (bgs *BackgammonState) InitBeginPosition9() {
+   bgs.Init()
+   //this.putNewCheckersOnPoint(5, 0, 1);
+   bgs.points[12][1] = 0;
+   //this.putNewCheckersOnPoint(3, 4, 2);
+   bgs.points[13][1] = 0;
+   //this.putNewCheckersOnPoint(5, 6, 2);
+   bgs.points[14][1] = 3;
+   //this.putNewCheckersOnPoint(5, 12, 2);
+   bgs.points[15][1] = 3;
+   //this.putNewCheckersOnPoint(2, 11, 1);
+   bgs.points[16][1] = 3;
+   //this.putNewCheckersOnPoint(3, 16, 1);
+   bgs.points[17][1] = 3;
+   bgs.points[18][1] = 3;
+   bgs.points[19][0] = 0;
+
+   //this.putNewCheckersOnPoint(5, 18, 1);
+   //this.putNewCheckersOnPoint(2, 23, 2);
+   bgs.points[0][0] = 0;
+   bgs.points[1][0] = 0;
+   bgs.points[2][0] = 3;
+   bgs.points[3][0] = 3;
+   bgs.points[4][0] = 3;
+   bgs.points[5][0] = 3;
+   bgs.points[6][0] = 3;
+   bgs.points[7][0] = 0;
    bgs.playerTurn = 0
    bgs.FindIfAllCheckersOnHomeBoard() 
 }

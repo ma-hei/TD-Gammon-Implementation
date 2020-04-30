@@ -70,6 +70,23 @@ func (nn *NeuralNetwork) Init(nNodesInLayer []int) {
     nn.InitETracesAndDerivatives()
 }
 
+func (nn *NeuralNetwork) reInitEtracesAndDerivatives() {
+    for i := 1; i < nn.nLayers; i++ {
+        nn.etracesWeights[i-1].Zero()
+        nn.derivativeWeights[i-1].Zero()
+        nn.etracesWeightsSplit[0][i-1].Zero()
+        nn.etracesWeightsSplit[1][i-1].Zero()
+        nn.derivativeWeightsSplit[0][i-1].Zero()
+        nn.derivativeWeightsSplit[1][i-1].Zero()
+        nn.derivativeBiases[i-1].Zero()
+        nn.etracesBiases[i-1].Zero()
+        nn.etracesBiasesSplit[0][i-1].Zero()
+        nn.etracesBiasesSplit[1][i-1].Zero()
+        nn.derivativeBiasesSplit[0][i-1].Zero()
+        nn.derivativeBiasesSplit[1][i-1].Zero()
+    }
+}
+
 func (nn *NeuralNetwork) InitETracesAndDerivatives() {
     nn.etracesWeightsSplit = make([][]*mat.Dense, 2)
     nn.etracesWeightsSplit[0] = make([]*mat.Dense, nn.nLayers)
@@ -141,9 +158,34 @@ func (nn *NeuralNetwork) FeedForward(input []float64) ([]*mat.Dense, []*mat.Dens
     return nn.z, nn.activations
 }
 
-//func (nn *NeuralNetwork) BackpropagateLastActivation2() []*mat.Dense {
-//    f1 := mat.NewDense(nn.nNodesInLayer[
-//}
+// computes derivative of activation in final layer wrt. weights
+func (nn *NeuralNetwork) BackpropagateLastActivationPerOutputUnit() {
+    for k := 0; k < nn.nNodesInLayer[nn.nLayers - 1]; k++ {
+        f1 := mat.NewDense(nn.nNodesInLayer[nn.nLayers - 1], 1, nil)
+        f1.Zero()
+        f1.Set(k,0,1)
+        //for i := 0; i < nn.nNodesInLayer[nn.nLayers - 1]; i++ {
+        //    f1.Set(i,0,1)
+        //}
+         
+        f2 := mat.DenseCopyOf(nn.z[nn.nLayers - 1])
+        f2.Apply(SigmoidDiffWrapper, f2) 
+        nn.errors[nn.nLayers - 1] = HadamardProduct(f1, f2)
+        // compute derivative of last layer weights
+        nn.derivativeWeightsSplit[k][nn.nLayers - 2].Mul(nn.errors[nn.nLayers - 1], nn.activations[nn.nLayers-2].T())
+        nn.derivativeBiasesSplit[k][nn.nLayers - 2].Copy(nn.errors[nn.nLayers - 1])
+        for i := nn.nLayers - 2; i > 0; i-- {
+            temp := nn.weights[i].T()
+            Wtranspose := mat.DenseCopyOf(temp)
+            nn.errors[i].Mul(Wtranspose, nn.errors[i+1])
+            f2 := mat.DenseCopyOf(nn.z[i])
+            f2.Apply(SigmoidDiffWrapper, f2) 
+            nn.errors[i] = HadamardProduct(nn.errors[i], f2)
+            nn.derivativeWeightsSplit[k][i - 1].Mul(nn.errors[i], nn.activations[i-1].T())
+            nn.derivativeBiasesSplit[k][i - 1].Copy(nn.errors[i])
+        }
+    }
+}
 
 // computes derivative of activation in final layer wrt. weights
 func (nn *NeuralNetwork) BackpropagateLastActivation() []*mat.Dense{
@@ -170,14 +212,44 @@ func (nn *NeuralNetwork) BackpropagateLastActivation() []*mat.Dense{
      return nn.errors
 }
 
+func (nn *NeuralNetwork) UpdateEligibilityTraceWithLastDerivativePerOutputUnit() {
+    learnRate := 0.5
+    for k := 0; k < nn.nNodesInLayer[nn.nLayers-1]; k++ {
+        for i := 0; i < nn.nLayers-1; i++ {
+            nn.etracesWeightsSplit[k][i].Scale(learnRate, nn.etracesWeightsSplit[k][i])
+            nn.etracesWeightsSplit[k][i].Add(nn.etracesWeightsSplit[k][i], nn.derivativeWeightsSplit[k][i])
+            nn.etracesBiasesSplit[k][i].Scale(learnRate, nn.etracesBiasesSplit[k][i])
+            nn.etracesBiasesSplit[k][i].Add(nn.etracesBiasesSplit[k][i], nn.derivativeBiasesSplit[k][i])
+        }
+    }
+}
+
 func (nn *NeuralNetwork) UpdateEligibilityTraceWithLastDerivative() {
-    learnRate := 0.2
+    learnRate := 0.7
     for i := 0; i < nn.nLayers-1; i++ {
         nn.etracesWeights[i].Scale(learnRate, nn.etracesWeights[i])
         nn.etracesWeights[i].Add(nn.etracesWeights[i], nn.derivativeWeights[i])
         nn.etracesBiases[i].Scale(learnRate, nn.etracesBiases[i])
         nn.etracesBiases[i].Add(nn.etracesBiases[i], nn.derivativeBiases[i])
     }
+}
+
+func (nn *NeuralNetwork) TdUpdatePerOutputUnit(reward float64, newStateValue float64, oldStateValue float64, a int, b int) {
+    learnRate := 0.2
+    //fmt.Printf("reward is %v\n", reward)
+    for i := 0; i < nn.nLayers-1; i++ {
+        temp := learnRate * (reward + newStateValue - oldStateValue)
+        temp2a := mat.DenseCopyOf(nn.etracesWeightsSplit[a][i])
+        temp2b := mat.DenseCopyOf(nn.etracesWeightsSplit[b][i])
+        temp2a.Sub(temp2a, temp2b)
+        temp2a.Scale(temp, temp2a)
+        nn.weights[i].Add(nn.weights[i], temp2a)
+        temp3a := mat.DenseCopyOf(nn.etracesBiasesSplit[a][i])
+        temp3b := mat.DenseCopyOf(nn.etracesBiasesSplit[b][i])
+        temp3a.Sub(temp3a, temp3b)
+        temp3a.Scale(temp, temp3a) 
+        nn.biases[i].Add(nn.biases[i], temp3a)
+    } 
 }
 
 func (nn *NeuralNetwork) TdUpdate(reward float64, newStateValue float64, oldStateValue float64) {

@@ -47,12 +47,25 @@ func translateToNNInput(b BackgammonState) []float64 {
     return nnInput
 }
 
+func getScoreOfActivationForPlayer(nn NeuralNetwork, playerTurn int) float64 {
+    a := playerTurn
+    b := (playerTurn+1) % 2
+    return (nn.activations[2].At(a,0) - nn.activations[2].At(b,0))
+}
+
 func findBestFollowUpState(selection map[string]BackgammonState, nn NeuralNetwork, playerTurn int) (float64, []float64, BackgammonState) {
+    //fmt.Printf("finding best follow up for player %v\n", playerTurn)
     bestState := make([]float64, 198)
     if playerTurn == 0 {
+        //fmt.Printf("choosing a random next state\n")
         randomState := selectRandomFollowUp(selection)
+        //fmt.Printf("choosing: \n")
+        //fmt.Printf("%v\n",randomState.toString())
         nnInput := translateToNNInput(randomState)
-        goodness := nn.activations[2].At(0,0)
+        nn.FeedForward(nnInput)
+        //goodness := nn.activations[2].At(0,0)
+        goodness := getScoreOfActivationForPlayer(nn, playerTurn)
+        //fmt.Printf("goodness of state %v\n", goodness)
         copy(bestState, nnInput)
         return goodness, nnInput, randomState
     }
@@ -69,7 +82,15 @@ func findBestFollowUpState(selection map[string]BackgammonState, nn NeuralNetwor
         nnInput := translateToNNInput(v)
         nn.FeedForward(nnInput)
         //goodness := nn.activations[2].At(0,0) - nn.activations[2].At(1,0)
-        goodness := nn.activations[2].At(0,0)
+        //goodness := nn.activations[2].At(0,0)
+        //bearedOff := v.checkersBearedOff[playerTurn]
+        //fmt.Printf("--> looking at\n")
+        //fmt.Printf("%v --> %v\n",v.toString(), bearedOff)
+        goodness := getScoreOfActivationForPlayer(nn, playerTurn)
+        //if (player == 0) {
+        //    goodness := getScoreOfActivationForPlayer(nn, 1)
+        //}
+        //fmt.Printf("goodness of state: %v\n", goodness)
         //fmt.Printf("%v\n", k)
         //fmt.Printf("goodness: %v\n", goodness)
         chose := false
@@ -80,7 +101,9 @@ func findBestFollowUpState(selection map[string]BackgammonState, nn NeuralNetwor
             BgState = v
         } 
     }
-    //fmt.Printf("chsoing: %v\n", BgState.toString())
+    //bearedOff := BgState.checkersBearedOff[playerTurn]
+    //fmt.Printf("choosing:\n%v --> %v\n", BgState.toString(), bearedOff)
+    //fmt.Printf("goodness of state: %v\n", max)
     return max, bestState, BgState
 }
 
@@ -127,7 +150,7 @@ func compareStates(a []float64, b []float64) {
 
 func main() {
     nn := NeuralNetwork{} 
-    nn.Init([]int{192 + 6, 80, 1})
+    nn.Init([]int{192 + 6, 80, 2})
     wins0 := 0
     wins1 := 0
     //for i := 0; i < 10000; i++ {
@@ -200,7 +223,7 @@ func main() {
     //    nn.UpdateEligibilityTraceWithLastDerivative()
     //    nn.TdUpdate(1.0, 0.0, 0.0)
     //}
-    for i := 0; i < 100000; i++ {
+    for i := 0; i < 0; i++ {
     //    fmt.Printf("------------\n")
         //controlNN(nn, c_)
         b := BackgammonState{}
@@ -272,6 +295,65 @@ func main() {
             //gameOver = true
         }
         fmt.Printf("done %v: %v, %v, %v\n", i, wins0, wins1, turn)
+    }
+
+    for i:=0; i<100000; i++ {
+        b := BackgammonState{}
+        b.InitBeginPosition()
+        b.playerTurn = i%2
+        gameOver := false    
+        turn := 1
+        nn.reInitEtracesAndDerivatives()
+        //for p := 0; p < 3; p++ {
+        for !gameOver {
+            followUpStates, won := b.rollDiceAndFindFollowUpStates(b.playerTurn)
+            if won {
+                b.playerTurn = ((b.playerTurn + 1) %2)
+            }
+            //fmt.Printf("playerTurn %v\n", b.playerTurn)
+            //fmt.Printf("n follow ups %v\n", len(followUpStates))
+            currentState := translateToNNInput(b)
+            //for l:=0;l<198;l++ {
+            //    fmt.Printf("%v ", currentState[l])
+            //}
+            //fmt.Printf("\n")
+            nn.FeedForward(currentState)
+            scoreCurrent := getScoreOfActivationForPlayer(nn, b.playerTurn)
+            nn.BackpropagateLastActivationPerOutputUnit()
+            nn.UpdateEligibilityTraceWithLastDerivativePerOutputUnit()
+            scoreNext, bestNextState, newBgState := findBestFollowUpState(followUpStates, nn, b.playerTurn)
+            reward := 0.0
+            if won {
+                reward = 1.0
+                if b.playerTurn == 1 {
+                //    fmt.Printf("player 1 won\n")
+                    //reward = 1.0
+                    wins1++
+                } else {
+                //    fmt.Printf("player 0 won\n")
+                    //fmt.Printf("%v\n", newBgState.toString())
+                    wins0++
+                }
+                compareStates(currentState, bestNextState)
+                gameOver = true
+    //            fmt.Printf("win: %v\n", playerWon)
+    //            fmt.Printf("last state: %v \n", b.toString())
+            }
+            nn.TdUpdatePerOutputUnit(reward, scoreNext, scoreCurrent, b.playerTurn, ((b.playerTurn+1)%2))
+            if true {
+                //fmt.Printf("the score of the new state                : %v\n", scoreNext)
+                //fmt.Printf("previous thought about prev. state        : %v\n", scoreCurrent)
+                //nn.FeedForward(currentState)
+                //scoreCurrent := getScoreOfActivationForPlayer(nn, b.playerTurn)
+            //    scoreCurrentOther := getScoreOfActivationForPlayer(nn, (b.playerTurn+1%2))
+                //fmt.Printf("new thought about prev. state             : %v\n", scoreCurrent)
+            }
+            copy(currentState, bestNextState)
+            b = newBgState 
+            //fmt.Printf("done turn %v %v\n", turn, gameOver)
+            turn++
+        }
+        fmt.Printf("done game %v: %v %v %v %v\n", i, wins0, wins1, float64(wins1)/float64(wins0), turn)
     }
     //b := BackgammonState{}
     //b.InitBeginPosition3()        

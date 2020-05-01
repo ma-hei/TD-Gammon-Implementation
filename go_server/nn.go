@@ -253,7 +253,7 @@ func (nn *NeuralNetwork) TdUpdatePerOutputUnit(reward float64, newStateValue flo
 }
 
 func (nn *NeuralNetwork) TdUpdate(reward float64, newStateValue float64, oldStateValue float64) {
-    learnRate := 0.05
+    learnRate := 0.3
     for i := 0; i < nn.nLayers-1; i++ {
         temp := learnRate * (reward + newStateValue - oldStateValue)
         temp2 := mat.DenseCopyOf(nn.etracesWeights[i])

@@ -126,7 +126,11 @@ func (bgs *BackgammonState) toString() string {
         stateString += strconv.Itoa(bgs.points[i][0])
         stateString += "."
         stateString += strconv.Itoa(bgs.points[i][1])
-        stateString += ","
+        if i == 11 {
+            stateString += "|"
+        } else {
+           stateString += ","
+        }
     }
     stateString += strconv.Itoa(bgs.bar[0])
     stateString += "."
@@ -185,6 +189,10 @@ func (bgs *BackgammonState) rollDiceAndFindFollowUpStates(playerTurn int) (map[s
         return followUpStates, true
     }
     bgs.rollDice()
+    bgs.lastMove1=""
+    bgs.lastMove2=""
+    bgs.lastMove3=""
+    bgs.lastMove4=""
     //bgs.dice1 = 3
     //bgs.dice2 = 5
     bgs.playerTurn = playerTurn
@@ -698,6 +706,37 @@ func (bgs *BackgammonState) InitBeginPosition8() {
 }
 
 func (bgs *BackgammonState) InitBeginPosition9() {
+   bgs.Init()
+   //this.putNewCheckersOnPoint(5, 0, 1);
+   bgs.points[12][1] = 0;
+   //this.putNewCheckersOnPoint(3, 4, 2);
+   bgs.points[13][1] = 0;
+   //this.putNewCheckersOnPoint(5, 6, 2);
+   bgs.points[14][1] = 3;
+   //this.putNewCheckersOnPoint(5, 12, 2);
+   bgs.points[15][1] = 3;
+   //this.putNewCheckersOnPoint(2, 11, 1);
+   bgs.points[16][1] = 3;
+   //this.putNewCheckersOnPoint(3, 16, 1);
+   bgs.points[17][1] = 3;
+   bgs.points[18][1] = 3;
+   bgs.points[19][0] = 0;
+
+   //this.putNewCheckersOnPoint(5, 18, 1);
+   //this.putNewCheckersOnPoint(2, 23, 2);
+   bgs.points[0][0] = 0;
+   bgs.points[1][0] = 0;
+   bgs.points[2][0] = 3;
+   bgs.points[3][0] = 3;
+   bgs.points[4][0] = 3;
+   bgs.points[5][0] = 3;
+   bgs.points[6][0] = 3;
+   bgs.points[7][0] = 0;
+   bgs.playerTurn = 0
+   bgs.FindIfAllCheckersOnHomeBoard() 
+}
+
+func (bgs *BackgammonState) InitBeginPosition10() {
    bgs.Init()
    //this.putNewCheckersOnPoint(5, 0, 1);
    bgs.points[12][1] = 0;

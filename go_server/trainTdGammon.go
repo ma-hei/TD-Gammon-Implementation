@@ -53,10 +53,12 @@ func getScoreOfActivationForPlayer(nn NeuralNetwork, playerTurn int) float64 {
     return (nn.activations[2].At(a,0) - nn.activations[2].At(b,0))
 }
 
-func findBestFollowUpState(selection map[string]BackgammonState, nn NeuralNetwork, playerTurn int) (float64, []float64, BackgammonState) {
-    //fmt.Printf("finding best follow up for player %v\n", playerTurn)
+func findBestFollowUpState(selection map[string]BackgammonState, nn NeuralNetwork, playerTurn int, turn int, episode int) (float64, []float64, BackgammonState) {
+    //if ((episode % 400) == 0 && (turn < 3)) {
+    //    fmt.Printf("finding best follow up for player %v\n", playerTurn)
+    //}
     bestState := make([]float64, 198)
-    if playerTurn == 0 {
+    if playerTurn == 3 {
         //fmt.Printf("choosing a random next state\n")
         randomState := selectRandomFollowUp(selection)
         //fmt.Printf("choosing: \n")
@@ -83,14 +85,17 @@ func findBestFollowUpState(selection map[string]BackgammonState, nn NeuralNetwor
         nn.FeedForward(nnInput)
         //goodness := nn.activations[2].At(0,0) - nn.activations[2].At(1,0)
         //goodness := nn.activations[2].At(0,0)
-        //bearedOff := v.checkersBearedOff[playerTurn]
-        //fmt.Printf("--> looking at\n")
-        //fmt.Printf("%v --> %v\n",v.toString(), bearedOff)
+     //   bearedOff := v.checkersBearedOff[playerTurn]
+     //   onBar := v.bar[0]
         goodness := getScoreOfActivationForPlayer(nn, playerTurn)
+     //   if ((episode % 400) == 0 && (turn < 3)) {
+     //       fmt.Printf("--> looking at\n")
+     //       fmt.Printf("%v --> %v --> %v\n",v.toString(), bearedOff, onBar)
+     //       fmt.Printf("goodness of state: %v\n", goodness)
+     //   }
         //if (player == 0) {
         //    goodness := getScoreOfActivationForPlayer(nn, 1)
         //}
-        //fmt.Printf("goodness of state: %v\n", goodness)
         //fmt.Printf("%v\n", k)
         //fmt.Printf("goodness: %v\n", goodness)
         chose := false
@@ -101,9 +106,15 @@ func findBestFollowUpState(selection map[string]BackgammonState, nn NeuralNetwor
             BgState = v
         } 
     }
-    //bearedOff := BgState.checkersBearedOff[playerTurn]
-    //fmt.Printf("choosing:\n%v --> %v\n", BgState.toString(), bearedOff)
-    //fmt.Printf("goodness of state: %v\n", max)
+    //if onBar > 0 {
+    //    fmt.Printf("---> onBar\n")
+    //}
+    //if ((episode % 400) == 0 && (turn % 50) == 0) {
+    //    onBar := BgState.bar[0]
+    //    bearedOff := BgState.checkersBearedOff[playerTurn]
+    //    fmt.Printf("choosing:\n%v --> %v --> %v\n", BgState.toString(), bearedOff, onBar)
+    //    fmt.Printf("goodness of state: %v\n", max)
+   // }
     return max, bestState, BgState
 }
 
@@ -248,7 +259,7 @@ func main() {
             //    fmt.Printf("%v\n", k)
             //}
             isWin := won
-            scoreNext, bestNextState, newBgState := findBestFollowUpState(followUpStates, nn, playerTurn)
+            scoreNext, bestNextState, newBgState := findBestFollowUpState(followUpStates, nn, playerTurn, turn, i )
             reward := 0.0
             if isWin {
                 playerWon := (playerTurn + 1) % 2
@@ -299,7 +310,7 @@ func main() {
 
     for i:=0; i<100000; i++ {
         b := BackgammonState{}
-        b.InitBeginPosition()
+        b.InitBeginPosition4()
         b.playerTurn = i%2
         gameOver := false    
         turn := 1
@@ -321,7 +332,13 @@ func main() {
             scoreCurrent := getScoreOfActivationForPlayer(nn, b.playerTurn)
             nn.BackpropagateLastActivationPerOutputUnit()
             nn.UpdateEligibilityTraceWithLastDerivativePerOutputUnit()
-            scoreNext, bestNextState, newBgState := findBestFollowUpState(followUpStates, nn, b.playerTurn)
+            scoreNext, bestNextState, newBgState := findBestFollowUpState(followUpStates, nn, b.playerTurn, turn, i)
+            if i>6000 && (i%10) == 0 {
+                fmt.Printf("player turn %v\n", b.playerTurn)
+                fmt.Printf("dice1 %v dice2 %v\n", b.dice1, b.dice2)
+                fmt.Printf("lm1: %v lm2: %v lm3: %v lm4: %v\n", newBgState.lastMove1, newBgState.lastMove2, newBgState.lastMove3, newBgState.lastMove4)
+                fmt.Printf("%v\n", newBgState.toString())
+            }
             reward := 0.0
             if won {
                 reward = 1.0

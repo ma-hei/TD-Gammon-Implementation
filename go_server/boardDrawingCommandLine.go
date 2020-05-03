@@ -35,8 +35,32 @@ func printBoardHalf(bg BackgammonState, upper bool) {
                }
                fmt.Printf(f + " ")
                p++
+           } else if k == 6 {
+               drawBoardN := false
+               drawBoardN = (upper && i == 0) || ( !upper && i == 4 )
+               if drawBoardN {
+                   c := bg.bar[1]
+                   if upper { c = bg.bar[0] }
+                   s := " "
+                   if c < 10 { s = "  " }
+                   s += strconv.Itoa(c) +" "
+                   fmt.Printf(s)
+               } else {
+                   fmt.Printf("    ")
+               }
            } else {
-               fmt.Printf("    ")
+               drawOffN := false
+               drawOffN = (upper && i == 0) || (!upper && i == 4)
+               if drawOffN {
+                   c := bg.checkersBearedOff[1]
+                   if upper { c = bg.checkersBearedOff[0] }
+                   s := " "
+                   if c < 10 { s = "  "}
+                   s += strconv.Itoa(c) + " "
+                   fmt.Printf(s)
+               } else {
+                   fmt.Printf("    ")
+               }
            }
         }
         fmt.Printf("|\n")
@@ -53,9 +77,9 @@ func drawBgState(bg BackgammonState) {
     fmt.Printf(footer2)
 }
 
-func main() {
-    bg := BackgammonState{}
-    bg.InitBeginPosition()
-    drawBgState(bg)
-}
+//func main() {
+//    bg := BackgammonState{}
+//    bg.InitBeginPosition()
+//    drawBgState(bg)
+//}
 

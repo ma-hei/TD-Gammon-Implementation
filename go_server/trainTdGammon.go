@@ -161,7 +161,7 @@ func compareStates(a []float64, b []float64) {
 
 func main() {
     nn := NeuralNetwork{} 
-    nn.Init([]int{192 + 6, 80, 2})
+    nn.Init([]int{192 + 6, 40, 2})
     wins0 := 0
     wins1 := 0
     //for i := 0; i < 10000; i++ {
@@ -238,7 +238,7 @@ func main() {
     //    fmt.Printf("------------\n")
         //controlNN(nn, c_)
         b := BackgammonState{}
-        b.InitBeginPosition8()        
+        b.InitBeginPosition9()        
         playerTurn := i%2
         b.playerTurn = playerTurn
         gameOver := false    
@@ -310,7 +310,7 @@ func main() {
 
     for i:=0; i<100000; i++ {
         b := BackgammonState{}
-        b.InitBeginPosition4()
+        b.InitBeginPosition()
         b.playerTurn = i%2
         gameOver := false    
         turn := 1
@@ -333,11 +333,12 @@ func main() {
             nn.BackpropagateLastActivationPerOutputUnit()
             nn.UpdateEligibilityTraceWithLastDerivativePerOutputUnit()
             scoreNext, bestNextState, newBgState := findBestFollowUpState(followUpStates, nn, b.playerTurn, turn, i)
-            if i>6000 && (i%10) == 0 {
+            if i>200 && (i%10) == 0 {
                 fmt.Printf("player turn %v\n", b.playerTurn)
                 fmt.Printf("dice1 %v dice2 %v\n", b.dice1, b.dice2)
                 fmt.Printf("lm1: %v lm2: %v lm3: %v lm4: %v\n", newBgState.lastMove1, newBgState.lastMove2, newBgState.lastMove3, newBgState.lastMove4)
-                fmt.Printf("%v\n", newBgState.toString())
+                drawBgState(newBgState) 
+                //fmt.Printf("%v\n", newBgState.toString())
             }
             reward := 0.0
             if won {

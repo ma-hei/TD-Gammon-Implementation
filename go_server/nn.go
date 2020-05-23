@@ -213,7 +213,7 @@ func (nn *NeuralNetwork) BackpropagateLastActivation() []*mat.Dense{
 }
 
 func (nn *NeuralNetwork) UpdateEligibilityTraceWithLastDerivativePerOutputUnit() {
-    learnRate := 0.5
+    learnRate := 0.7
     for k := 0; k < nn.nNodesInLayer[nn.nLayers-1]; k++ {
         for i := 0; i < nn.nLayers-1; i++ {
             nn.etracesWeightsSplit[k][i].Scale(learnRate, nn.etracesWeightsSplit[k][i])
@@ -225,7 +225,7 @@ func (nn *NeuralNetwork) UpdateEligibilityTraceWithLastDerivativePerOutputUnit()
 }
 
 func (nn *NeuralNetwork) UpdateEligibilityTraceWithLastDerivative() {
-    learnRate := 0.3
+    learnRate := 0.7
     for i := 0; i < nn.nLayers-1; i++ {
         nn.etracesWeights[i].Scale(learnRate, nn.etracesWeights[i])
         nn.etracesWeights[i].Add(nn.etracesWeights[i], nn.derivativeWeights[i])
@@ -235,7 +235,7 @@ func (nn *NeuralNetwork) UpdateEligibilityTraceWithLastDerivative() {
 }
 
 func (nn *NeuralNetwork) TdUpdatePerOutputUnit(reward float64, newStateValue float64, oldStateValue float64, a int, b int) {
-    learnRate := 0.08
+    learnRate := 0.1
     //fmt.Printf("reward is %v\n", reward)
     for i := 0; i < nn.nLayers-1; i++ {
         temp := learnRate * (reward + newStateValue - oldStateValue)

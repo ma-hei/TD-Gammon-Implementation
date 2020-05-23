@@ -194,12 +194,15 @@ func (bgs *BackgammonState) rollDiceAndFindFollowUpStates(playerTurn int) (map[s
     bgs.lastMove3=""
     bgs.lastMove4=""
     //bgs.dice1 = 3
-    //bgs.dice2 = 5
+    //bgs.dice2 = 3
     bgs.playerTurn = playerTurn
     //fmt.Printf("----- player %v rolled %v %v\n", playerTurn, bgs.dice1, bgs.dice2)
     //doubleRoll := bgs.dice1 == bgs.dice2
     temp := bgs.findFollowUpStatesWithDiceRolled(playerTurn)
+    //fmt.Printf("--------------\n") 
+    fmt.Printf("found %v\n", len(temp))
     if len(temp) == 0 {
+       fmt.Printf("no state\n")
        newBackGammonState := BackgammonState{}
        newBackGammonState.InitFromOtherState(bgs)
        newBackGammonState.playerTurn = ((playerTurn + 1) % 2)
@@ -211,6 +214,7 @@ func (bgs *BackgammonState) rollDiceAndFindFollowUpStates(playerTurn int) (map[s
 func (bgs *BackgammonState) findFollowUpStatesWithTwoSameDiceRolled(playerTurn int) map[string]BackgammonState {
     allFollowUpStates := make(map[string]BackgammonState)
     diceRolled := bgs.dice1
+    // bug remove *bgs from start here
     start := []BackgammonState{*bgs}
 
     for i := 0; i<4; i++ {
@@ -282,6 +286,11 @@ func (bgs *BackgammonState) findFollowUpStatesWithDiceRolled(playerTurn int) map
 
 func addFollowUpStatesToAllStates(followUpStates []BackgammonState, allStates map[string]BackgammonState) {
     for _, s := range followUpStates {
+        //fmt.Printf("%v\n", s.toString())
+        //fmt.Printf("%v\n", s.lastMove1)
+        //fmt.Printf("%v\n", s.lastMove2)
+        //fmt.Printf("%v\n", s.lastMove3)
+        //fmt.Printf("%v\n", s.lastMove4)
         allStates[s.toString()] = s
     }
 }
@@ -763,6 +772,40 @@ func (bgs *BackgammonState) InitBeginPosition10() {
    bgs.points[5][0] = 3;
    bgs.points[6][0] = 3;
    bgs.points[7][0] = 0;
+   bgs.playerTurn = 0
+   bgs.FindIfAllCheckersOnHomeBoard() 
+}
+
+func (bgs *BackgammonState) InitBeginPosition11() {
+   bgs.Init()
+   //this.putNewCheckersOnPoint(5, 0, 1);
+   bgs.points[12][1] = 3;
+   //this.putNewCheckersOnPoint(3, 4, 2);
+   bgs.points[13][1] = 0;
+   //this.putNewCheckersOnPoint(5, 6, 2);
+   bgs.points[14][1] = 0;
+   //this.putNewCheckerOnPoint(5, 12, 2);
+   bgs.points[15][1] = 0;
+   //this.putNewCheckersOnPoint(2, 11, 1);
+   bgs.points[16][0] = 3;
+   //this.putNewCheckersOnPoint(3, 16, 1);
+   //bgs.points[17][1] = 3;
+   bgs.points[18][0] = 5;
+   bgs.points[19][1] = 2;
+
+   //this.putNewCheckersOnPoint(5, 18, 1);
+   //this.putNewCheckersOnPoint(2, 23, 2);
+   bgs.points[0][0] = 5;
+   bgs.points[1][0] = 0;
+   bgs.points[2][0] = 3;
+   bgs.points[3][1] = 2;
+   bgs.points[4][1] = 1;
+   bgs.points[5][0] = 3;
+   bgs.points[6][1] = 3;
+   bgs.points[7][1] = 2;
+   bgs.points[8][0] = 1;
+   bgs.points[9][1] = 2;
+   bgs.bar[0]=1;
    bgs.playerTurn = 0
    bgs.FindIfAllCheckersOnHomeBoard() 
 }

@@ -1,5 +1,0 @@
-<svg [attr.width]=boardWidth [attr.height]=boardHeight style="background: #ffffcc">
-  <polygon *ngFor="let point of points" [attr.points]="point.pointsString" [attr.fill]="point.fillString"/>
-  <line [attr.x1]="boardDimensions.getBarX()" [attr.x2]="boardDimensions.getBarX()" y1="0" [attr.y2]=boardHeight stroke="#331a00" [attr.stroke-width]="boardDimensions.pointWidth" stroke-linecap="butt"/>
-  <circle *ngFor="let checker of checkers" [attr.cx]="checker.x" [attr.cy]="checker.y" [attr.r]="checker.r" stroke="black" [attr.fill]="checker.color" (click)="mouseEnter(3000)" />
-</svg>

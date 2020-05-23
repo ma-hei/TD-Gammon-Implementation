@@ -1,6 +1,6 @@
 # Backgammon
 
-The goal of this project was to implement TD gammon from scratch (Gerald Tesauro, 1995). 
+The goal of this project was to implement TD gammon from scratch (Gerald Tesauro, 1995) as an exercise in Reinforcement Learning. 
 
 The layout of the backgammon board on the command line was copied from https://github.com/dellalibera/gym-backgammon.
 
